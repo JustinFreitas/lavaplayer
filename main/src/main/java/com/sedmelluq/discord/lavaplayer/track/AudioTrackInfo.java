@@ -7,7 +7,7 @@ public class AudioTrackInfo {
     /**
      * Track title
      */
-    public final String title;
+    public String title;
     /**
      * Track author, if known
      */

@@ -244,9 +244,10 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
             .withPlaybackSignatureTimestamp(playerScriptTimestamp.scriptTimestamp)
             .setAttribute(httpInterface);
 
-        log.debug("Loading track info with payload: {}", clientConfig.toJsonString());
+        String clientConfigJson = clientConfig.toJsonString();
+        log.debug("Loading track info with payload: {}", clientConfigJson);
 
-        post.setEntity(new StringEntity(clientConfig.toJsonString(), "UTF-8"));
+        post.setEntity(new StringEntity(clientConfigJson, "UTF-8"));
         try (CloseableHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithContent(response, "video page response");
 
