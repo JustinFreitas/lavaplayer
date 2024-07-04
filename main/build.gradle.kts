@@ -56,3 +56,9 @@ tasks {
 mavenPublishing {
     configure(JavaLibrary(JavadocJar.Javadoc()))
 }
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("org.apache.groovy:groovy:4.0.20")).using(module("org.apache.groovy:groovy:4.0.22"))
+    }
+}

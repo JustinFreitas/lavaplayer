@@ -15,7 +15,7 @@ logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
     group = "com.github.justinfreitas"
-    version = gitVersion
+    version = "v2.2.0_2"
 
     repositories {
         mavenLocal()

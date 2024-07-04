@@ -18,3 +18,9 @@ dependencies {
 mavenPublishing {
     configure(JavaLibrary(JavadocJar.Javadoc()))
 }
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("commons-codec:commons-codec:1.11")).using(module("commons-codec:commons-codec:1.17.0"))
+    }
+}
