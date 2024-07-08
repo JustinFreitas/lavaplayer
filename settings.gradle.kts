@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 }
 
 fun VersionCatalogBuilder.plugins() {
-    val mavenPublishPlugin = version("maven-publish-plugin", "0.25.3")
+    val mavenPublishPlugin = version("maven-publish-plugin", "0.29.0")
 
     plugin("maven-publish", "com.vanniktech.maven.publish").versionRef(mavenPublishPlugin)
     plugin("maven-publish-base", "com.vanniktech.maven.publish.base").versionRef(mavenPublishPlugin)
@@ -37,7 +37,7 @@ fun VersionCatalogBuilder.common() {
     library("slf4j", "org.slf4j", "slf4j-api").version("2.0.13")
     library("commons-io", "commons-io", "commons-io").version("2.16.1")
 
-    version("jackson", "2.17.1")
+    version("jackson", "2.17.2")
     library("jackson-core", "com.fasterxml.jackson.core", "jackson-core").versionRef("jackson")
     library("jackson-databind", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson")
 
