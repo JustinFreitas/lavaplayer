@@ -27,6 +27,7 @@ dependencyResolutionManagement {
 }
 
 fun VersionCatalogBuilder.plugins() {
+    // https://github.com/vanniktech/gradle-maven-publish-plugin
     val mavenPublishPlugin = version("maven-publish-plugin", "0.29.0")
 
     plugin("maven-publish", "com.vanniktech.maven.publish").versionRef(mavenPublishPlugin)
@@ -34,28 +35,41 @@ fun VersionCatalogBuilder.plugins() {
 }
 
 fun VersionCatalogBuilder.common() {
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     library("slf4j", "org.slf4j", "slf4j-api").version("2.0.13")
+    // https://mvnrepository.com/artifact/commons-io/commons-io
     library("commons-io", "commons-io", "commons-io").version("2.16.1")
-    library("intellij-annotations", "org.jetbrains", "annotations").version("24.0.0")
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
+    library("intellij-annotations", "org.jetbrains", "annotations").version("24.1.0")
 
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     version("jackson", "2.17.2")
     library("jackson-core", "com.fasterxml.jackson.core", "jackson-core").versionRef("jackson")
     library("jackson-databind", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson")
 
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
     library("httpclient", "org.apache.httpcomponents", "httpclient").version("4.5.14")
 
+    // https://mvnrepository.com/artifact/org.jsoup/jsoup
     library("jsoup", "org.jsoup", "jsoup").version("1.18.1")
+    // https://mvnrepository.com/artifact/net.iharder/base64
     library("base64", "net.iharder", "base64").version("2.3.9")
+    // https://mvnrepository.com/artifact/org.json/json
     library("json", "org.json", "json").version("20240303")
 }
 
 fun VersionCatalogBuilder.others() {
+    // https://mvnrepository.com/artifact/com.github.walkyst/ibxm-fork
     library("ibxm-fork", "com.github.walkyst", "ibxm-fork").version("a75")
-    library("rhino-engine", "org.mozilla", "rhino-engine").version("1.7.14")
+    // https://mvnrepository.com/artifact/org.mozilla/rhino-engine
+    library("rhino-engine", "org.mozilla", "rhino-engine").version("1.7.15")
 }
 
 fun VersionCatalogBuilder.test() {
+    // https://mvnrepository.com/artifact/org.apache.groovy/groovy
     library("groovy", "org.apache.groovy", "groovy").version("4.0.22")
+    // https://mvnrepository.com/artifact/org.spockframework/spock-core
     library("spock-core", "org.spockframework", "spock-core").version("2.4-M4-groovy-4.0")
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     library("logback-classic", "ch.qos.logback", "logback-classic").version("1.5.6")
 }
