@@ -36,7 +36,7 @@ fun VersionCatalogBuilder.plugins() {
 
 fun VersionCatalogBuilder.common() {
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    library("slf4j", "org.slf4j", "slf4j-api").version("2.0.13")
+    library("slf4j", "org.slf4j", "slf4j-api").version("2.0.16")
     // https://mvnrepository.com/artifact/commons-io/commons-io
     library("commons-io", "commons-io", "commons-io").version("2.16.1")
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
@@ -71,5 +71,5 @@ fun VersionCatalogBuilder.test() {
     // https://mvnrepository.com/artifact/org.spockframework/spock-core
     library("spock-core", "org.spockframework", "spock-core").version("2.4-M4-groovy-4.0")
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    library("logback-classic", "ch.qos.logback", "logback-classic").version("1.5.6")
+    library("logback-classic", "ch.qos.logback", "logback-classic").version("1.5.7")
 }
