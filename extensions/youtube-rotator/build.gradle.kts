@@ -21,6 +21,7 @@ mavenPublishing {
 
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        substitute(module("commons-codec:commons-codec:1.11")).using(module("commons-codec:commons-codec:1.17.0"))
+        // https://mvnrepository.com/artifact/commons-codec/commons-codec
+        substitute(module("commons-codec:commons-codec:1.11")).using(module("commons-codec:commons-codec:1.17.1"))
     }
 }
