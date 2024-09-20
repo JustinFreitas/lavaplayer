@@ -62,7 +62,8 @@ mavenPublishing {
 configurations.all {
     resolutionStrategy.dependencySubstitution {
         // https://mvnrepository.com/artifact/org.apache.groovy/groovy
-        substitute(module("org.apache.groovy:groovy:4.0.20")).using(module("org.apache.groovy:groovy:4.0.22"))
+        substitute(module("org.apache.groovy:groovy:4.0.20")).using(module("org.apache.groovy:groovy:4.0.23"))
+        substitute(module("org.apache.groovy:groovy:4.0.22")).using(module("org.apache.groovy:groovy:4.0.23"))
         // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
         substitute(module("org.slf4j:slf4j-api:2.0.15")).using(module("org.slf4j:slf4j-api:2.0.16"))
     }
