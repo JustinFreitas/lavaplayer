@@ -38,7 +38,6 @@ subprojects {
     }
 }
 
-@SuppressWarnings("GrMethodMayBeStatic")
 fun versionFromGit(): Pair<String, Boolean> {
     Grgit.open(mapOf("currentDir" to project.rootDir)).use { git ->
         val headTag = git.tag
