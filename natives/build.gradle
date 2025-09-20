@@ -8,12 +8,12 @@ import java.util.regex.Pattern
 
 apply from: 'natives.gradle'
 
-ext.opusVersion = '1.3'
-ext.mpg123Version = '1.25.10'
-ext.oggVersion = '1.3.3'
-ext.vorbisVersion = '1.3.6'
-ext.sampleRateVersion = '0.1.9'
-ext.fdkAacVersion = '2.0.0'
+ext.opusVersion = '1.5'
+ext.mpg123Version = '1.33.2'
+ext.oggVersion = '1.3.6'
+ext.vorbisVersion = '1.3.7'
+ext.sampleRateVersion = '0.2.2'
+ext.fdkAacVersion = '2.0.3'
 
 task load {
     doLast {
@@ -22,7 +22,7 @@ task load {
             def unpackPath = "$buildDir/tmp"
 
             download.run {
-                src "https://www.mega-nerd.com/SRC/libsamplerate-${sampleRateVersion}.tar.gz"
+                src "https://github.com/libsndfile/libsamplerate/archive/refs/tags/${sampleRateVersion}.tar.gz"
                 dest downloadPath
             }
 
@@ -42,7 +42,7 @@ task load {
             def unpackPath = "$buildDir"
 
             download.run {
-                src "https://github.com/mstorsjo/fdk-aac/archive/v${fdkAacVersion}.zip"
+                src "https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v${fdkAacVersion}.zip"
                 dest downloadPath
             }
 
