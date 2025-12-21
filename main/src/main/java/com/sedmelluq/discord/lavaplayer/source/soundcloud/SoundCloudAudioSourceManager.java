@@ -100,7 +100,7 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
         SoundCloudDataReader dataReader,
         SoundCloudDataLoader dataLoader,
         SoundCloudFormatHandler formatHandler,
-        SoundCloudPlaylistLoader playlistLoader,
+        SoundCloudPlaylistLoader playlistLoader
     ) {
         this(allowSearch, dataReader, dataLoader, formatHandler, playlistLoader, false);
     }
