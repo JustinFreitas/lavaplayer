@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.4] - 2025-12-21
+* Fix equality check for format mime type in https://github.com/lavalink-devs/lavaplayer/pull/177
+* Add optional filter for Soundcloud preview tracks in https://github.com/lavalink-devs/lavaplayer/pull/181
+* Return NO_TRACK for empty liked and search track lists in https://github.com/lavalink-devs/lavaplayer/pull/183
+
 ## [2.2.3] - 2025-02-01
 * Make PersistentHttpStream$getConnectionRequest overridable in https://github.com/lavalink-devs/lavaplayer/pull/159
 * Add constructor with ByteByffer to MutableAudioFrame in https://github.com/lavalink-devs/lavaplayer/pull/158
