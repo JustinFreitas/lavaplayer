@@ -1,9 +1,13 @@
 # Change Log
 
-## [2.2.4] - 2025-12-21
+## [2.2.5] - 2025-12-21
 * Fix equality check for format mime type in https://github.com/lavalink-devs/lavaplayer/pull/177
 * Add optional filter for Soundcloud preview tracks in https://github.com/lavalink-devs/lavaplayer/pull/181
 * Return NO_TRACK for empty liked and search track lists in https://github.com/lavalink-devs/lavaplayer/pull/183
+
+## [2.2.4] - 2025-06-18
+* Fix timecode when seeking a SoundCloudM3uAudioTrack in https://github.com/lavalink-devs/lavaplayer/pull/173
+* Don't overwrite existing sampleSizes in a fragmented MP4 track header if present in https://github.com/lavalink-devs/lavaplayer/commit/2fc96d70b9f632ceb7b8387b69a874cbf86c05c0
 
 ## [2.2.3] - 2025-02-01
 * Make PersistentHttpStream$getConnectionRequest overridable in https://github.com/lavalink-devs/lavaplayer/pull/159
