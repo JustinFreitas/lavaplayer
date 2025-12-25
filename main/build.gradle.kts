@@ -67,8 +67,6 @@ mavenPublishing {
 
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        // https://mvnrepository.com/artifact/org.apache.groovy/groovy
-        substitute(module("org.apache.groovy:groovy")).using(module("org.apache.groovy:groovy:4.0.29"))
         // https://mvnrepository.com/artifact/commons-codec/commons-codec
         substitute(module("commons-codec:commons-codec:1.11")).using(module(libs.commons.codec.get().toString()))
     }
