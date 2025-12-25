@@ -12,6 +12,7 @@ import com.sedmelluq.lava.extensions.youtuberotator.planner.AbstractRoutePlanner
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"unused", "deprecation", "UnusedReturnValue"})
 public class YoutubeIpRotatorSetup {
     private static final int DEFAULT_RETRY_LIMIT = 10;
     private static final YoutubeHttpContextFilter DEFAULT_DELEGATE = new YoutubeHttpContextFilter();
@@ -89,7 +90,7 @@ public class YoutubeIpRotatorSetup {
                 // No retry for some exceptions we know are hopeless for retry.
                 it.setRetryHandler(RETRY_HANDLER);
                 // Regularly cleans up per-route connection pool which gets huge due to many routes caused by
-                // each request having an unique route.
+                // each request having a unique route.
                 it.evictExpiredConnections();
             });
 

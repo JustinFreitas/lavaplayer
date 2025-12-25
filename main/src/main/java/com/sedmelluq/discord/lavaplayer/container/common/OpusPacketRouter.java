@@ -17,10 +17,13 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
 /**
- * A router for opus packets to the output specified by an audio processing context. It automatically detects if the
- * packets can go clean through to the output without any decoding and encoding steps on each packet and rebuilds the
+ * A router for opus packets to the output specified by an audio processing
+ * context. It automatically detects if the
+ * packets can go clean through to the output without any decoding and encoding
+ * steps on each packet and rebuilds the
  * pipeline of the output if necessary.
  */
+@SuppressWarnings("unused")
 public class OpusPacketRouter {
     private static final Logger log = LoggerFactory.getLogger(OpusPacketRouter.class);
 
@@ -30,7 +33,6 @@ public class OpusPacketRouter {
     private final byte[] headerBytes;
     private final MutableAudioFrame offeredFrame;
 
-    private long currentFrameDuration;
     private long currentTimecode;
     private long requestedTimecode;
     private OpusDecoder opusDecoder;
@@ -39,6 +41,7 @@ public class OpusPacketRouter {
     private ShortBuffer frameBuffer;
     private AudioDataFormat inputFormat;
     private int lastFrameSize;
+    private float volumeMultiplier = 1.0f;
 
     /**
      * @param context        Configuration and output information for processing
@@ -57,11 +60,18 @@ public class OpusPacketRouter {
         offeredFrame.setFormat(context.outputFormat);
     }
 
+    public void setVolumeMultiplier(float volumeMultiplier) {
+        this.volumeMultiplier = volumeMultiplier;
+        checkDecoderNecessity();
+    }
+
     /**
      * Notify downstream handlers about a seek.
      *
-     * @param requestedTimecode Timecode in milliseconds to which the seek was requested to
-     * @param providedTimecode  Timecode in milliseconds to which the seek was actually performed to
+     * @param requestedTimecode Timecode in milliseconds to which the seek was
+     *                          requested to
+     * @param providedTimecode  Timecode in milliseconds to which the seek was
+     *                          actually performed to
      */
     public void seekPerformed(long requestedTimecode, long providedTimecode) {
         this.requestedTimecode = requestedTimecode;
@@ -120,7 +130,8 @@ public class OpusPacketRouter {
 
             frameSize = OpusDecoder.getPacketFrameSize(inputFrequency, headerBytes, 0, headerBytes.length);
         } else {
-            frameSize = OpusDecoder.getPacketFrameSize(inputFrequency, buffer.array(), buffer.position(), buffer.remaining());
+            frameSize = OpusDecoder.getPacketFrameSize(inputFrequency, buffer.array(), buffer.position(),
+                    buffer.remaining());
         }
 
         if (frameSize == 0) {
@@ -130,7 +141,7 @@ public class OpusPacketRouter {
             inputFormat = new OpusAudioDataFormat(inputChannels, inputFrequency, frameSize);
         }
 
-        currentFrameDuration = frameSize * 1000 / inputFrequency;
+        long currentFrameDuration = (long) frameSize * 1000 / inputFrequency;
         currentTimecode += currentFrameDuration;
         return frameSize;
     }
@@ -153,14 +164,37 @@ public class OpusPacketRouter {
         }
 
         if (frameBuffer == null || frameBuffer.capacity() < frameSize * inputChannels) {
-            frameBuffer = ByteBuffer.allocateDirect(frameSize * inputChannels * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
+            frameBuffer = ByteBuffer.allocateDirect(frameSize * inputChannels * 2).order(ByteOrder.nativeOrder())
+                    .asShortBuffer();
         }
 
         frameBuffer.clear();
         frameBuffer.limit(frameSize);
 
         opusDecoder.decode(nativeBuffer, frameBuffer);
+
+        if (volumeMultiplier != 1.0f) {
+            applyVolume(frameSize * inputChannels);
+        }
+
         downstream.process(frameBuffer);
+    }
+
+    private void applyVolume(int length) {
+        applyVolumeMultiplierToAllFramesInBuffer(length, frameBuffer, volumeMultiplier);
+    }
+
+    public static void applyVolumeMultiplierToAllFramesInBuffer(int length, ShortBuffer frameBuffer, float volumeMultiplier) {
+        for (int i = 0; i < length; i++) {
+            short sample = frameBuffer.get(i);
+            int newValue = (int) (sample * volumeMultiplier);
+            if (newValue > Short.MAX_VALUE) {
+                newValue = Short.MAX_VALUE;
+            } else if (newValue < Short.MIN_VALUE) {
+                newValue = Short.MIN_VALUE;
+            }
+            frameBuffer.put(i, (short) newValue);
+        }
     }
 
     private void passThrough(ByteBuffer buffer) throws InterruptedException {
@@ -173,9 +207,11 @@ public class OpusPacketRouter {
     }
 
     private void checkDecoderNecessity() {
-        if (AudioPipelineFactory.isProcessingRequired(context, inputFormat)) {
+        // Force decoding if re-encoding is required OR if we have a volume multiplier
+        if (AudioPipelineFactory.isProcessingRequired(context, inputFormat) || volumeMultiplier != 1.0f) {
             if (opusDecoder == null) {
-                log.debug("Enabling reencode mode on opus track.");
+                log.debug("Enabling re-encode mode on opus track (processing: {}, multiplier: {}).",
+                        AudioPipelineFactory.isProcessingRequired(context, inputFormat), volumeMultiplier);
 
                 initialiseDecoder();
 
@@ -199,7 +235,8 @@ public class OpusPacketRouter {
             downstream = AudioPipelineFactory.create(context, new PcmFormat(inputChannels, inputFrequency));
             downstream.seekPerformed(Math.max(currentTimecode, requestedTimecode), currentTimecode);
         } finally {
-            // When an exception is thrown, do not leave the router in a limbo state with decoder but no downstream.
+            // When an exception is thrown, do not leave the router in a limbo state with
+            // decoder but no downstream.
             if (downstream == null) {
                 destroyDecoder();
             }

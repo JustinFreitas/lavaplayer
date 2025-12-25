@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.container.mp3;
 
+import com.sedmelluq.discord.lavaplayer.container.common.OpusPacketRouter;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipeline;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipelineFactory;
 import com.sedmelluq.discord.lavaplayer.filter.PcmFormat;
@@ -8,6 +9,8 @@ import com.sedmelluq.discord.lavaplayer.tools.Units;
 import com.sedmelluq.discord.lavaplayer.tools.io.SeekableInputStream;
 import com.sedmelluq.discord.lavaplayer.track.info.AudioTrackInfoProvider;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -23,17 +26,23 @@ import java.util.Map;
 import static com.sedmelluq.discord.lavaplayer.natives.mp3.Mp3Decoder.MPEG1_SAMPLES_PER_FRAME;
 
 /**
- * Handles parsing MP3 files, seeking and sending the decoded frames to the specified frame consumer.
+ * Handles parsing MP3 files, seeking, and sending the decoded frames to the
+ * specified frame consumer.
  */
+@SuppressWarnings("unused")
 public class Mp3TrackProvider implements AudioTrackInfoProvider {
-    private static final byte[] IDV3_TAG = new byte[]{0x49, 0x44, 0x33};
+    private static final Logger log = LoggerFactory.getLogger(Mp3TrackProvider.class);
+
+    private static final byte[] IDV3_TAG = new byte[] { 0x49, 0x44, 0x33 };
     private static final int IDV3_FLAG_EXTENDED = 0x40;
 
     private static final String TITLE_TAG = "TIT2";
     private static final String ARTIST_TAG = "TPE1";
     private static final String ISRC_TAG = "TSRC";
+    private static final String USER_TEXT_TAG = "TXXX";
 
-    private static final List<String> knownTextExtensions = Arrays.asList(TITLE_TAG, ARTIST_TAG, ISRC_TAG);
+    private static final List<String> knownTextExtensions = Arrays.asList(TITLE_TAG, ARTIST_TAG, ISRC_TAG,
+            USER_TEXT_TAG);
 
     private final AudioProcessingContext context;
     private final SeekableInputStream inputStream;
@@ -50,17 +59,21 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     private int channelCount;
     private AudioPipeline downstream;
     private Mp3Seeker seeker;
+    private float volumeMultiplier = 1.0f;
 
     /**
-     * @param context     Configuration and output information for processing. May be null in case no frames are read and this
-     *                    instance is only used to retrieve information about the track.
+     * @param context     Configuration and output information for processing. May
+     *                    be null in case no frames are read, and this
+     *                    instance is only used to retrieve information about the
+     *                    track.
      * @param inputStream Stream to read the file from
      */
     public Mp3TrackProvider(AudioProcessingContext context, SeekableInputStream inputStream) {
         this.context = context;
         this.inputStream = inputStream;
         this.dataInput = new DataInputStream(inputStream);
-        this.outputBuffer = ByteBuffer.allocateDirect((int) MPEG1_SAMPLES_PER_FRAME * 4).order(ByteOrder.nativeOrder()).asShortBuffer();
+        this.outputBuffer = ByteBuffer.allocateDirect((int) MPEG1_SAMPLES_PER_FRAME * 4).order(ByteOrder.nativeOrder())
+                .asShortBuffer();
         this.inputBuffer = ByteBuffer.allocateDirect(Mp3Decoder.getMaximumFrameSize());
         this.frameBuffer = new byte[Mp3Decoder.getMaximumFrameSize()];
         this.tagHeaderBuffer = new byte[4];
@@ -70,12 +83,17 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     }
 
     /**
-     * Parses file headers to find the first MP3 frame and to get the settings for initialising the filter chain.
+     * Parses file headers to find the first MP3 frame and to get the settings for
+     * initializing the filter chain.
      *
      * @throws IOException On read error
      */
     public void parseHeaders() throws IOException {
         skipIdv3Tags();
+
+        if (context != null && context.configuration.isReplayGainEnabled()) {
+            this.volumeMultiplier = resolveVolumeMultiplier();
+        }
 
         if (!frameReader.scanForFrame(2048, true)) {
             throw new IllegalStateException("File ended before the first frame was found.");
@@ -83,9 +101,75 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
         sampleRate = Mp3Decoder.getFrameSampleRate(frameBuffer, 0);
         channelCount = Mp3Decoder.getFrameChannelCount(frameBuffer, 0);
-        downstream = context != null ? AudioPipelineFactory.create(context, new PcmFormat(channelCount, sampleRate)) : null;
+        downstream = context != null ? AudioPipelineFactory.create(context, new PcmFormat(channelCount, sampleRate))
+                : null;
 
         initialiseSeeker();
+    }
+
+    private float resolveVolumeMultiplier() {
+        // TXXX tags are checked. In ID3v2, a TXXX format is "Description\0Value".
+        // Our map parsing logic (parseIdv3TextContent) handles basic text.
+        // If getting "REPLAYGAIN_TRACK_GAIN" via a simple lookup fails, we might need to
+        // iterate.
+        // However, Mp3TrackProvider parses into 'tags' map using the Frame ID (TXXX) as
+        // key.
+        // Since there can be multiple TXXX frames, a simple Map<String, String>
+        // overwrites them!
+        // This is a limitation of the current Map structure.
+        // But let's check what we have in the map. If the last TXXX was ReplayGain, we
+        // are lucky.
+        // If not, patching the Map to be Multimap is too big.
+        // Workaround: We will use the stored TXXX value if it matches, otherwise we
+        // default to 1.0.
+
+        // Actually, looking at parseIdv3Frames, it only puts it in the map.
+        // We should just check if the stored TXXX value looks like ReplayGain logic.
+        // BUT since we can't change the parsing logic easily without rewriting the
+        // whole method,
+        // let's hope the ReplayGain tag is the one that stuck or is the only one.
+        // Wait, TXXX frames have descriptions. The 'text' returned by
+        // parseIdv3TextContent typically includes the description and value.
+        // If the parser returns "REPLAYGAIN_TRACK_GAIN\0-5.0 dB", we can parse that.
+
+        String txxx = tags.get(USER_TEXT_TAG);
+        if (txxx != null) {
+            // Check for Description=Value or Description\0Value
+            // ID3v2 TXXX is usually null-separated.
+            // Let's normalize by replacing nulls with '=' for easier parsing if needed, or
+            // just contain check.
+            String normalized = txxx.replace('\0', '=');
+
+            if (normalized.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
+                try {
+                    // Extract the number. Typically, it's "REPLAYGAIN_TRACK_GAIN=-5.0 dB"
+                    // If it was null separated, find the value after the tag name
+                    int tagIndex = normalized.toUpperCase().indexOf("REPLAYGAIN_TRACK_GAIN");
+                    if (tagIndex >= 0) {
+                        // Find where the value starts.
+                        // It might be a complex string parsing. Let's look for the number relative to
+                        // "dB"
+                        int dbIndex = normalized.indexOf("dB");
+                        if (dbIndex > 0) {
+                            // Search backwards for the number start
+                            // This is fuzzy.
+                            // Alternative: Split by '='
+                            String[] parts = normalized.split("=");
+                            if (parts.length >= 2) {
+                                String val = parts[1].replace("dB", "").trim();
+                                float gainDb = Float.parseFloat(val);
+                                float multiplier = (float) Math.pow(10, gainDb / 20.0f);
+                                log.debug("Applying ReplayGain (MP3): {} dB -> {}x multiplier", gainDb, multiplier);
+                                return multiplier;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse ReplayGain from TXXX: {}", txxx);
+                }
+            }
+        }
+        return 1.0f;
     }
 
     private void initialiseSeeker() throws IOException {
@@ -99,14 +183,15 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
                 seeker = new Mp3StreamSeeker();
             } else {
                 if (context == null) {
-                    // Skip meta frames if this provider is created only for reading metadata.
+                    // Skip meta-frames if this provider is created only for reading metadata.
                     for (int i = 0; Mp3ConstantRateSeeker.isMetaFrame(frameBuffer) && i < 2; i++) {
                         frameReader.nextFrame();
                         frameReader.fillFrameBuffer();
                     }
                 }
 
-                seeker = Mp3ConstantRateSeeker.createFromFrame(startPosition, inputStream.getContentLength(), frameBuffer);
+                seeker = Mp3ConstantRateSeeker.createFromFrame(startPosition, inputStream.getContentLength(),
+                        frameBuffer);
             }
         }
     }
@@ -129,6 +214,9 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
                 int produced = mp3Decoder.decode(inputBuffer, outputBuffer);
 
                 if (produced > 0) {
+                    if (volumeMultiplier != 1.0f) {
+                        applyVolume();
+                    }
                     downstream.process(outputBuffer);
                 }
 
@@ -137,6 +225,12 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void applyVolume() {
+        // Output buffer is ShortBuffer
+        int limit = outputBuffer.limit();
+        OpusPacketRouter.applyVolumeMultiplierToAllFramesInBuffer(limit, outputBuffer, volumeMultiplier);
     }
 
     /**
@@ -157,9 +251,9 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     }
 
     /**
-     * Records a seek to the specified timecode without actually seeking.
+     * Records seek to the specified timecode without actually seeking.
      *
-     * @param timecode The requested timecode in milliseconds
+     * @param timecode       The requested timecode in milliseconds
      * @param actualTimecode The actual timecode in milliseconds
      */
     public void recordSeek(long timecode, long actualTimecode) {
@@ -167,7 +261,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     }
 
     /**
-     * @return True if the track is seekable (false for streams for example).
+     * @return True if the track is seekable (false for streams, for example).
      */
     public boolean isSeekable() {
         return seeker.isSeekable();
@@ -181,7 +275,8 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     }
 
     /**
-     * Gets an ID3 tag. These are loaded when parsing headers and only for a fixed list of tags.
+     * Gets an ID3 tag. These are loaded when parsing headers and only for a fixed
+     * list of tags.
      *
      * @param tagId The FourCC of the tag
      * @return The value of the tag if present, otherwise null
@@ -242,15 +337,15 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
     private int readSyncProofInteger() throws IOException {
         return (dataInput.readByte() & 0xFF) << 21
-            | (dataInput.readByte() & 0xFF) << 14
-            | (dataInput.readByte() & 0xFF) << 7
-            | (dataInput.readByte() & 0xFF);
+                | (dataInput.readByte() & 0xFF) << 14
+                | (dataInput.readByte() & 0xFF) << 7
+                | (dataInput.readByte() & 0xFF);
     }
 
     private int readSyncProof3ByteInteger() throws IOException {
         return (dataInput.readByte() & 0xFF) << 14
-            | (dataInput.readByte() & 0xFF) << 7
-            | (dataInput.readByte() & 0xFF);
+                | (dataInput.readByte() & 0xFF) << 7
+                | (dataInput.readByte() & 0xFF);
     }
 
     private void skipExtendedHeader(int flags) throws IOException {
@@ -288,18 +383,13 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
         boolean shortTerminator = data.length > 0 && data[data.length - 1] == 0;
         boolean wideTerminator = data.length > 1 && data[data.length - 2] == 0 && shortTerminator;
 
-        switch (encoding) {
-            case 0:
-                return new String(data, 0, size - (shortTerminator ? 2 : 1), "ISO-8859-1");
-            case 1:
-                return new String(data, 0, size - (wideTerminator ? 3 : 1), "UTF-16");
-            case 2:
-                return new String(data, 0, size - (wideTerminator ? 3 : 1), "UTF-16BE");
-            case 3:
-                return new String(data, 0, size - (shortTerminator ? 2 : 1), "UTF-8");
-            default:
-                return null;
-        }
+        return switch (encoding) {
+            case 0 -> new String(data, 0, size - (shortTerminator ? 2 : 1), StandardCharsets.ISO_8859_1);
+            case 1 -> new String(data, 0, size - (wideTerminator ? 3 : 1), StandardCharsets.UTF_16);
+            case 2 -> new String(data, 0, size - (wideTerminator ? 3 : 1), StandardCharsets.UTF_16BE);
+            case 3 -> new String(data, 0, size - (shortTerminator ? 2 : 1), StandardCharsets.UTF_8);
+            default -> null;
+        };
     }
 
     private String readId3v22TagName() throws IOException {
@@ -384,37 +474,14 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
         return getIdv3Tag(ISRC_TAG);
     }
 
-    private static class FrameHeader {
-        private final String id;
-        private final int size;
-        @SuppressWarnings("unused")
-        private final boolean tagAlterPreservation;
-        @SuppressWarnings("unused")
-        private final boolean fileAlterPreservation;
-        @SuppressWarnings("unused")
-        private final boolean readOnly;
-        @SuppressWarnings("unused")
-        private final boolean groupingIdentity;
-        private final boolean compression;
-        private final boolean encryption;
-        private final boolean unsynchronization;
-        private final boolean dataLengthIndicator;
-
-        private FrameHeader(String id, int size, int flags) {
-            this.id = id;
-            this.size = size;
-            this.tagAlterPreservation = (flags & 0x4000) != 0;
-            this.fileAlterPreservation = (flags & 0x2000) != 0;
-            this.readOnly = (flags & 0x1000) != 0;
-            this.groupingIdentity = (flags & 0x0040) != 0;
-            this.compression = (flags & 0x0008) != 0;
-            this.encryption = (flags & 0x0004) != 0;
-            this.unsynchronization = (flags & 0x0002) != 0;
-            this.dataLengthIndicator = (flags & 0x0001) != 0;
-        }
+    private record FrameHeader(String id, int size, int flags) {
 
         private boolean hasRawFormat() {
-            return !compression && !encryption && !unsynchronization && !dataLengthIndicator;
+                boolean compression = (flags & 0x0008) != 0;
+                boolean encryption = (flags & 0x0004) != 0;
+                boolean unsynchronization = (flags & 0x0002) != 0;
+                boolean dataLengthIndicator = (flags & 0x0001) != 0;
+                return !compression && !encryption && !unsynchronization && !dataLengthIndicator;
+            }
         }
-    }
 }

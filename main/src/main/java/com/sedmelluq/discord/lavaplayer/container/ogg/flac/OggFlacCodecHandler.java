@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 /**
  * Loader for an OGG FLAC track from an OGG packet stream.
  */
+@SuppressWarnings("unused")
 public class OggFlacCodecHandler implements OggCodecHandler {
     private static final int FLAC_IDENTIFIER = ByteBuffer.wrap(new byte[]{0x7F, 'F', 'L', 'A'}).getInt();
 
@@ -84,21 +85,16 @@ public class OggFlacCodecHandler implements OggCodecHandler {
         return trackInfoBuilder.build();
     }
 
-    private static class Blueprint implements OggTrackBlueprint {
-        private final FlacTrackInfo info;
-
-        private Blueprint(FlacTrackInfo info) {
-            this.info = info;
-        }
+    private record Blueprint(FlacTrackInfo info) implements OggTrackBlueprint {
 
         @Override
-        public OggTrackHandler loadTrackHandler(OggPacketInputStream stream) {
-            return new OggFlacTrackHandler(info, stream);
-        }
+            public OggTrackHandler loadTrackHandler(OggPacketInputStream stream) {
+                return new OggFlacTrackHandler(info, stream);
+            }
 
-        @Override
-        public int getSampleRate() {
-            return info.stream.sampleRate;
+            @Override
+            public int sampleRate() {
+                return info.stream.sampleRate;
+            }
         }
-    }
 }
