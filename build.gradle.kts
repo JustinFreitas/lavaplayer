@@ -1,4 +1,3 @@
-@file:Suppress("UnstableApiUsage")
 
 import org.ajoberstar.grgit.Grgit
 
@@ -15,7 +14,7 @@ logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
     group = "com.github.justinfreitas"
-    version = "v2.2.6_1"
+    version = "v2.2.6_2"
 
     repositories {
         mavenLocal()

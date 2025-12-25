@@ -12,12 +12,13 @@ import java.util.Map;
 /**
  * Loader for Opus track providers from an OGG stream.
  */
+@SuppressWarnings("unused")
 public class OggOpusCodecHandler implements OggCodecHandler {
-    private static final int OPUS_IDENTIFIER = ByteBuffer.wrap(new byte[]{'O', 'p', 'u', 's'}).getInt();
-    private static final int HEAD_TAG_HALF = ByteBuffer.wrap(new byte[]{'H', 'e', 'a', 'd'}).getInt();
+    private static final int OPUS_IDENTIFIER = ByteBuffer.wrap(new byte[] { 'O', 'p', 'u', 's' }).getInt();
+    private static final int HEAD_TAG_HALF = ByteBuffer.wrap(new byte[] { 'H', 'e', 'a', 'd' }).getInt();
 
-    private static final int OPUS_TAG_HALF = ByteBuffer.wrap(new byte[]{'O', 'p', 'u', 's'}).getInt();
-    private static final int TAGS_TAG_HALF = ByteBuffer.wrap(new byte[]{'T', 'a', 'g', 's'}).getInt();
+    private static final int OPUS_TAG_HALF = ByteBuffer.wrap(new byte[] { 'O', 'p', 'u', 's' }).getInt();
+    private static final int TAGS_TAG_HALF = ByteBuffer.wrap(new byte[] { 'T', 'a', 'g', 's' }).getInt();
 
     private static final int MAX_COMMENTS_SAVED_LENGTH = 1024 * 60; // 60 KB
     private static final int MAX_COMMENTS_READ_LENGTH = 1024 * 1024 * 120; // 120 MB
@@ -33,14 +34,18 @@ public class OggOpusCodecHandler implements OggCodecHandler {
     }
 
     @Override
-    public OggTrackBlueprint loadBlueprint(OggPacketInputStream stream, DirectBufferStreamBroker broker) throws IOException {
+    public OggTrackBlueprint loadBlueprint(OggPacketInputStream stream, DirectBufferStreamBroker broker)
+            throws IOException {
         ByteBuffer firstPacket = broker.getBuffer();
         int sampleRate = getSampleRate(firstPacket);
         verifyFirstPacket(firstPacket);
-        loadCommentsHeader(stream, broker, true);
+        loadCommentsHeader(stream, broker);
+
+        Map<String, String> tags = parseTags(broker.getBuffer(), broker.isTruncated());
+
         stream.setSeekPoints(stream.createSeekTable(sampleRate));
         int channelCount = firstPacket.get(9) & 0xFF;
-        return new Blueprint(broker, channelCount, sampleRate);
+        return new Blueprint(broker, channelCount, sampleRate, tags);
     }
 
     @Override
@@ -49,12 +54,11 @@ public class OggOpusCodecHandler implements OggCodecHandler {
         verifyFirstPacket(firstPacket);
         int sampleRate = getSampleRate(firstPacket);
 
-        loadCommentsHeader(stream, broker, false);
+        loadCommentsHeader(stream, broker);
 
         return new OggMetadata(
-            parseTags(broker.getBuffer(), broker.isTruncated()),
-            detectLength(stream, sampleRate)
-        );
+                parseTags(broker.getBuffer(), broker.isTruncated()),
+                detectLength(stream, sampleRate));
     }
 
     private Map<String, String> parseTags(ByteBuffer tagBuffer, boolean truncated) {
@@ -85,38 +89,25 @@ public class OggOpusCodecHandler implements OggCodecHandler {
         return Integer.reverseBytes(firstPacket.getInt(12));
     }
 
-    private void loadCommentsHeader(OggPacketInputStream stream, DirectBufferStreamBroker broker, boolean skip)
-        throws IOException {
+    private void loadCommentsHeader(OggPacketInputStream stream, DirectBufferStreamBroker broker)
+            throws IOException {
 
         if (!stream.startNewPacket()) {
             throw new IllegalStateException("No OpusTags packet in track.");
-        } else if (!broker.consumeNext(stream, skip ? 0 : MAX_COMMENTS_SAVED_LENGTH, MAX_COMMENTS_READ_LENGTH)) {
+        } else if (!broker.consumeNext(stream, MAX_COMMENTS_SAVED_LENGTH, MAX_COMMENTS_READ_LENGTH)) {
             if (!stream.isPacketComplete()) {
                 throw new IllegalStateException("Opus comments header packet longer than allowed.");
             }
         }
     }
 
-    private static class Blueprint implements OggTrackBlueprint {
-        private final DirectBufferStreamBroker broker;
-        private final int channelCount;
-        private final int sampleRate;
-
-        private Blueprint(DirectBufferStreamBroker broker, int channelCount, int sampleRate) {
-            this.broker = broker;
-            this.channelCount = channelCount;
-            this.sampleRate = sampleRate;
-        }
+    private record Blueprint(DirectBufferStreamBroker broker, int channelCount, int sampleRate,
+                             Map<String, String> tags) implements OggTrackBlueprint {
 
         @Override
-        public OggTrackHandler loadTrackHandler(OggPacketInputStream stream) {
-            broker.clear();
-            return new OggOpusTrackHandler(stream, broker, channelCount, sampleRate);
+            public OggTrackHandler loadTrackHandler(OggPacketInputStream stream) {
+                broker.clear();
+                return new OggOpusTrackHandler(stream, broker, channelCount, sampleRate, tags);
+            }
         }
-
-        @Override
-        public int getSampleRate() {
-            return sampleRate;
-        }
-    }
 }

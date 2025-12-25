@@ -34,3 +34,17 @@ version.txt
 *.json
 *.project
 *.html
+*.class
+/.output.txt
+/main/bin/main/certificates/bundled.txt
+/main/bin/main/certificates/dst-root-ca-x3.jks
+/natives-publish/bin/main/natives/darwin/libconnector.dylib
+/natives-publish/bin/main/natives/linux-aarch32/libconnector.so
+/natives-publish/bin/main/natives/linux-aarch64/libconnector.so
+/natives-publish/bin/main/natives/linux-arm/libconnector.so
+/natives-publish/bin/main/natives/linux-armhf/libconnector.so
+/natives-publish/bin/main/natives/linux-musl-aarch64/libconnector.so
+/natives-publish/bin/main/natives/linux-musl-x86-64/libconnector.so
+/natives-publish/bin/main/natives/linux-x86/libconnector.so
+/natives-publish/bin/main/natives/linux-x86-64/libconnector.so
+/main/bin/test/com/sedmelluq/discord/lavaplayer/LibrarySpec.groovy

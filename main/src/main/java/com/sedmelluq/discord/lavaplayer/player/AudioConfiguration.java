@@ -8,6 +8,7 @@ import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrameBufferFactory;
 /**
  * Configuration for audio processing.
  */
+@SuppressWarnings("unused")
 public class AudioConfiguration {
     public static final int OPUS_QUALITY_MAX = 10;
 
@@ -15,6 +16,7 @@ public class AudioConfiguration {
     private volatile int opusEncodingQuality;
     private volatile AudioDataFormat outputFormat;
     private volatile boolean filterHotSwapEnabled;
+    private volatile boolean replayGainEnabled;
     private volatile AudioFrameBufferFactory frameBufferFactory;
 
     /**
@@ -60,6 +62,14 @@ public class AudioConfiguration {
         this.filterHotSwapEnabled = filterHotSwapEnabled;
     }
 
+    public boolean isReplayGainEnabled() {
+        return replayGainEnabled;
+    }
+
+    public void setReplayGainEnabled(boolean replayGainEnabled) {
+        this.replayGainEnabled = replayGainEnabled;
+    }
+
     public AudioFrameBufferFactory getFrameBufferFactory() {
         return frameBufferFactory;
     }
@@ -71,12 +81,14 @@ public class AudioConfiguration {
     /**
      * @return A copy of this configuration.
      */
+    @SuppressWarnings("unused")
     public AudioConfiguration copy() {
         AudioConfiguration copy = new AudioConfiguration();
         copy.setResamplingQuality(resamplingQuality);
         copy.setOpusEncodingQuality(opusEncodingQuality);
         copy.setOutputFormat(outputFormat);
         copy.setFilterHotSwapEnabled(filterHotSwapEnabled);
+        copy.setReplayGainEnabled(replayGainEnabled);
         copy.setFrameBufferFactory(frameBufferFactory);
         return copy;
     }
