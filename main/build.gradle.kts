@@ -6,6 +6,7 @@ import kotlin.io.path.writeText
 
 plugins {
     `java-library`
+    groovy
     alias(libs.plugins.maven.publish.base)
 }
 
@@ -34,11 +35,12 @@ dependencies {
     testImplementation(libs.groovy)
     testImplementation(libs.spock.core)
     testImplementation(libs.logback.classic)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks {
     val updateVersion by registering {
-        val output = "$buildDir/resources/main/com/sedmelluq/discord/lavaplayer/tools/version.txt"
+        val output = "${layout.buildDirectory.get()}/resources/main/com/sedmelluq/discord/lavaplayer/tools/version.txt"
         inputs.property("version", version)
         outputs.file(output)
 
@@ -53,6 +55,10 @@ tasks {
     classes {
         dependsOn(updateVersion)
     }
+
+    test {
+        useJUnitPlatform()
+    }
 }
 
 mavenPublishing {
@@ -62,6 +68,8 @@ mavenPublishing {
 configurations.all {
     resolutionStrategy.dependencySubstitution {
         // https://mvnrepository.com/artifact/org.apache.groovy/groovy
-        substitute(module("org.apache.groovy:groovy")).using(module("org.apache.groovy:groovy:4.0.27"))
+        substitute(module("org.apache.groovy:groovy")).using(module("org.apache.groovy:groovy:4.0.29"))
+        // https://mvnrepository.com/artifact/commons-codec/commons-codec
+        substitute(module("commons-codec:commons-codec:1.11")).using(module(libs.commons.codec.get().toString()))
     }
 }

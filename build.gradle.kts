@@ -4,7 +4,7 @@ import org.ajoberstar.grgit.Grgit
 
 plugins {
     // https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
-    id("org.ajoberstar.grgit") version "5.2.2"
+    id("org.ajoberstar.grgit") version "5.3.3"
     // https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
     id("de.undercouch.download") version "5.6.0"
     alias(libs.plugins.maven.publish.base) apply false
@@ -15,7 +15,7 @@ logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
     group = "com.github.justinfreitas"
-    version = "v2.2.4_2"
+    version = "v2.2.6_1"
 
     repositories {
         mavenLocal()

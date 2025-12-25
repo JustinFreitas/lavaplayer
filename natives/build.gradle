@@ -8,18 +8,18 @@ import java.util.regex.Pattern
 
 apply from: 'natives.gradle'
 
-ext.opusVersion = '1.5'
-ext.mpg123Version = '1.33.2'
+ext.opusVersion = '1.6'
+ext.mpg123Version = '1.33.4'
 ext.oggVersion = '1.3.6'
 ext.vorbisVersion = '1.3.7'
 ext.sampleRateVersion = '0.2.2'
 ext.fdkAacVersion = '2.0.3'
 
-task load {
+tasks.register('load') {
     doLast {
         if (!file("$projectDir/samplerate/src").exists()) {
-            def downloadPath = "$buildDir/tmp/libsamplerate.tar.gz"
-            def unpackPath = "$buildDir/tmp"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/libsamplerate.tar.gz"
+            def unpackPath = "${layout.buildDirectory.get()}/tmp"
 
             download.run {
                 src "https://github.com/libsndfile/libsamplerate/archive/refs/tags/${sampleRateVersion}.tar.gz"
@@ -38,8 +38,8 @@ task load {
         }
 
         if (!file("$projectDir/fdk-aac/libAACdec").exists()) {
-            def downloadPath = "$buildDir/tmp/fdk-aac-v${fdkAacVersion}.zip"
-            def unpackPath = "$buildDir"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/fdk-aac-v${fdkAacVersion}.zip"
+            def unpackPath = "${layout.buildDirectory.get()}"
 
             download.run {
                 src "https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v${fdkAacVersion}.zip"
@@ -58,8 +58,7 @@ task load {
         }
 
         if (!file("$projectDir/vorbis/libogg-${oggVersion}").exists()) {
-            def downloadPath = "$buildDir/tmp/temp.zip"
-            def unpackPath = "$buildDir"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.zip"
 
             download.run {
                 src "https://downloads.xiph.org/releases/ogg/libogg-${oggVersion}.zip"
@@ -83,8 +82,7 @@ task load {
         }
 
         if (!file("$projectDir/opus/opus-${opusVersion}").exists()) {
-            def downloadPath = "$buildDir/tmp/temp.tar.gz"
-            def unpackPath = "$buildDir"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.tar.gz"
 
             download.run {
                 src "https://downloads.xiph.org/releases/opus/opus-${opusVersion}.tar.gz"
@@ -98,8 +96,7 @@ task load {
         }
 
         if (!Os.isFamily(Os.FAMILY_WINDOWS) && !file("$projectDir/mp3/mpg123-${mpg123Version}").exists()) {
-            def downloadPath = "$buildDir/tmp/temp.tar.bz2"
-            def unpackPath = "$buildDir"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.tar.bz2"
 
             download.run {
                 src "https://www.mpg123.de/download/mpg123-${mpg123Version}.tar.bz2"
@@ -118,7 +115,7 @@ ext.devEnvPath = null
 
 def getDevEnvLocation() {
     if (ext.devEnvPath == null) {
-        def testDirectory = file("$buildDir/tmp/vsloc")
+        def testDirectory = file("${layout.buildDirectory.get()}/tmp/vsloc")
         testDirectory.deleteDir()
         testDirectory.mkdirs()
 
@@ -167,7 +164,7 @@ def buildOpusOnWindows(force) {
     }
 }
 
-def waitForAndCheckSuccess(process, name) {
+static def waitForAndCheckSuccess(process, name) {
     process.waitForProcessOutput(System.out as Appendable, System.err)
 
     if (process.exitValue() != 0) {
@@ -198,17 +195,19 @@ def buildOpusOnLinux(force) {
     }
 }
 
-def extractVersionPrefix(fullVersion, partCount) {
+static def extractVersionPrefix(String fullVersion, int partCount) {
     def parts = fullVersion.split('\\.').toList()
     return parts.subList(0, Math.min(partCount, parts.size())).join('.')
 }
 
-def replaceAutotoolsVersion(directory, originalVersion) {
-    def localVersion = (['automake', '--version'].execute().text =~ /\(GNU automake\) ([0-9.]+)/)[0][1]
+static def replaceAutotoolsVersion(directory, String originalVersion) {
+    def matcher = (['automake', '--version'].execute().text =~ /\(GNU automake\) ([0-9.]+)/)
+    matcher.find()
+    String localVersion = matcher.group(1)
     def localMajorVersion = extractVersionPrefix(localVersion, 2)
     def originalMajorVersion = extractVersionPrefix(originalVersion, 2)
 
-    [file("$directory/aclocal.m4"), file("$directory/configure")].each {
+    [new File(directory.toString(), "aclocal.m4"), new File(directory.toString(), "configure")].each {
         it.text = it.text.replace("am__api_version='$originalMajorVersion'", "am__api_version='$localMajorVersion'").replace(originalVersion, localVersion)
     }
 }
@@ -259,17 +258,17 @@ def prepareBuilds(force) {
     }
 }
 
-task compileNatives() {}
-task checkNatives() {}
+tasks.register('compileNatives') {}
+tasks.register('checkNatives') {}
 
 def buildTaskConfig = [
-    buildBase      : buildDir,
+    buildBase      : layout.buildDirectory.get(),
     projectBase    : projectDir,
     deployBase     : project(':natives-publish').projectDir,
-    setupDependency: tasks.load,
+    setupDependency: tasks.named('load'),
     setupDoFirst   : { config -> prepareBuilds(false) },
-    compileTask    : tasks.compileNatives,
-    checkTask      : tasks.checkNatives,
+    compileTask    : tasks.named('compileNatives'),
+    checkTask      : tasks.named('checkNatives'),
     name           : 'connector'
 ]
 
