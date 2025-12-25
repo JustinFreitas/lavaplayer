@@ -1,6 +1,6 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
-def getBuildParameters(base) {
+static def getBuildParameters(base) {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         return [
             'identifier'    : "win-x86-64",
@@ -57,14 +57,14 @@ def createBuildTask(tasksHolder, config) {
 
         workingDir buildDirectory
         executable 'cmake'
-        args(parameters.setupArguments + ['../..'])
+        args(*(parameters.setupArguments + ['../..']))
         environment parameters.env
     }
 
     def buildTask = tasksHolder.create("${taskBase}-build", Exec) {
         workingDir buildDirectory
         executable 'cmake'
-        args(['--build', '.'] + parameters.buildArguments)
+        args(*(['--build', '.'] + parameters.buildArguments))
         environment parameters.env
     }
 
@@ -92,10 +92,10 @@ def createBuildTask(tasksHolder, config) {
 
     buildTask.dependsOn(setupTask)
     deployTask.dependsOn(buildTask)
-    config.compileTask.dependsOn(deployTask)
+    config.compileTask.configure { dependsOn(deployTask) }
 
     if (!file("${deployDirectory}/${parameters.library}").exists()) {
-        config.checkTask.dependsOn(deployTask)
+        config.checkTask.configure { dependsOn(deployTask) }
     }
 }
 
