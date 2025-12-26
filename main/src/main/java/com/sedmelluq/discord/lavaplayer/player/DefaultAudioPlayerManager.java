@@ -33,7 +33,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.
 /**
  * The default implementation of audio player manager.
  */
-public class DefaultAudioPlayerManager implements AudioPlayerManager {
+public final class DefaultAudioPlayerManager implements AudioPlayerManager {
     private static final int TRACK_INFO_VERSIONED = 1;
     private static final int TRACK_INFO_VERSION = 3;
 

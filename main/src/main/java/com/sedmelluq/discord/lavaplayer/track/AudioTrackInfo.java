@@ -3,7 +3,7 @@ package com.sedmelluq.discord.lavaplayer.track;
 /**
  * Meta info for an audio track
  */
-public class AudioTrackInfo {
+public final class AudioTrackInfo {
     /**
      * Track title
      */
