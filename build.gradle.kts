@@ -1,5 +1,6 @@
 
 import org.ajoberstar.grgit.Grgit
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 
 plugins {
     // https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
@@ -14,7 +15,7 @@ logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
     group = "com.github.justinfreitas"
-    version = "v2.2.6_2"
+    version = "v2.2.6_4"
 
     repositories {
         mavenLocal()
@@ -34,6 +35,34 @@ subprojects {
     configure<JavaPluginExtension> {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    pluginManager.withPlugin("com.vanniktech.maven.publish.base") {
+        configure<MavenPublishBaseExtension> {
+            pom {
+                name.set(project.name)
+                description.set("Lavaplayer audio player library")
+                url.set("https://github.com/sedmelluq/lavaplayer")
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("sedmelluq")
+                        name.set("Sedmelluq")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
+                    developerConnection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
+                    url.set("https://github.com/sedmelluq/lavaplayer")
+                }
+            }
+        }
     }
 }
 
