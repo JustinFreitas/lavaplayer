@@ -7,13 +7,17 @@ import com.sedmelluq.discord.lavaplayer.filter.AudioPipelineFactory;
 import com.sedmelluq.discord.lavaplayer.filter.PcmFormat;
 import com.sedmelluq.discord.lavaplayer.natives.vorbis.VorbisDecoder;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * Consumes Vorbis track data from a matroska file.
  */
 public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
+    private static final Logger log = LoggerFactory.getLogger(MatroskaVorbisTrackConsumer.class);
     private static final int PCM_BUFFER_SIZE = 4096;
     private static final int COPY_BUFFER_SIZE = 256;
 
@@ -23,12 +27,14 @@ public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
     private final AudioPipeline downstream;
     private ByteBuffer inputBuffer;
     private float[][] channelPcmBuffers;
+    private float volumeMultiplier = 1.0f;
 
     /**
      * @param context Configuration and output information for processing
      * @param track   The associated matroska track
+     * @param tags    Tags associated with the file or track
      */
-    public MatroskaVorbisTrackConsumer(AudioProcessingContext context, MatroskaFileTrack track) {
+    public MatroskaVorbisTrackConsumer(AudioProcessingContext context, MatroskaFileTrack track, Map<String, String> tags) {
 
         this.track = track;
         this.decoder = new VorbisDecoder();
@@ -37,6 +43,41 @@ public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
         AudioDetails audioTrack = fillMissingDetails(track.audio, track.codecPrivate);
         this.downstream = AudioPipelineFactory.create(context,
             new PcmFormat(audioTrack.channels, (int) audioTrack.samplingFrequency));
+
+        if (context.configuration.isReplayGainEnabled()) {
+            this.volumeMultiplier = resolveVolumeMultiplier(tags);
+        }
+    }
+
+    private float resolveVolumeMultiplier(Map<String, String> tags) {
+        float totalGainDb = 0.0f;
+
+        String r128GainTag = tags.get("R128_TRACK_GAIN");
+        String replayGainTag = tags.get("REPLAYGAIN_TRACK_GAIN");
+
+        if (r128GainTag != null) {
+            try {
+                int r128Gain = Integer.parseInt(r128GainTag);
+                totalGainDb += r128Gain / 256.0f;
+            } catch (NumberFormatException e) {
+                 log.warn("Invalid R128_TRACK_GAIN tag value: {}", r128GainTag);
+            }
+        } else if (replayGainTag != null) {
+            try {
+                String cleanValue = replayGainTag.replace("dB", "").trim();
+                totalGainDb += Float.parseFloat(cleanValue);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
+            }
+        }
+
+        if (totalGainDb != 0.0f) {
+            float multiplier = (float) Math.pow(10, totalGainDb / 20.0f);
+            log.debug("Applying ReplayGain (Matroska Vorbis): {} dB -> {}x multiplier", totalGainDb, multiplier);
+            return multiplier;
+        }
+
+        return 1.0f;
     }
 
     @Override
@@ -148,9 +189,20 @@ public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
             output = decoder.output(channelPcmBuffers);
 
             if (output > 0) {
+                if (volumeMultiplier != 1.0f) {
+                    applyVolume(output);
+                }
                 downstream.process(channelPcmBuffers, 0, output);
             }
         } while (output == PCM_BUFFER_SIZE);
+    }
+
+    private void applyVolume(int outputSize) {
+        for (float[] channel : channelPcmBuffers) {
+            for (int i = 0; i < outputSize; i++) {
+                channel[i] *= volumeMultiplier;
+            }
+        }
     }
 
     @Override

@@ -63,7 +63,7 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
         boolean success = false;
 
         try {
-            trackConsumer = selectAudioTrack(file.getTrackList(), context);
+            trackConsumer = selectAudioTrack(file, context);
 
             if (trackConsumer == null) {
                 throw new IllegalStateException("No supported audio tracks in the file.");
@@ -82,18 +82,18 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
         return trackConsumer;
     }
 
-    private MatroskaTrackConsumer selectAudioTrack(MatroskaFileTrack[] tracks, AudioProcessingContext context) {
+    private MatroskaTrackConsumer selectAudioTrack(MatroskaStreamingFile file, AudioProcessingContext context) {
         MatroskaTrackConsumer trackConsumer = null;
 
-        for (MatroskaFileTrack track : tracks) {
+        for (MatroskaFileTrack track : file.getTrackList()) {
             if (track.type == MatroskaFileTrack.Type.AUDIO) {
                 if (MatroskaContainerProbe.OPUS_CODEC.equals(track.codecId)) {
-                    trackConsumer = new MatroskaOpusTrackConsumer(context, track);
+                    trackConsumer = new MatroskaOpusTrackConsumer(context, track, file.getTags());
                     break;
                 } else if (MatroskaContainerProbe.VORBIS_CODEC.equals(track.codecId)) {
-                    trackConsumer = new MatroskaVorbisTrackConsumer(context, track);
+                    trackConsumer = new MatroskaVorbisTrackConsumer(context, track, file.getTags());
                 } else if (MatroskaContainerProbe.AAC_CODEC.equals(track.codecId)) {
-                    trackConsumer = new MatroskaAacTrackConsumer(context, track);
+                    trackConsumer = new MatroskaAacTrackConsumer(context, track, file.getTags());
                 }
             }
         }

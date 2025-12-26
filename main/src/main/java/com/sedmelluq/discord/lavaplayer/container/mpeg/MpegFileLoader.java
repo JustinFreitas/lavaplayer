@@ -87,6 +87,16 @@ public class MpegFileLoader {
         return lastEventMessage;
     }
 
+    public Map<String, String> getTags() {
+        Map<String, String> tags = new HashMap<>();
+        for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                tags.put(entry.getKey(), (String) entry.getValue());
+            }
+        }
+        return tags;
+    }
+
     private void parseMetadata(MpegSectionInfo udta) throws IOException {
         reader.in(udta).handleVersioned("meta", meta -> {
             reader.in(meta).handle("ilst", ilst -> {
@@ -100,20 +110,49 @@ public class MpegFileLoader {
     }
 
     private void parseMetadataEntry(MpegSectionInfo entry) throws IOException {
-        MpegSectionInfo dataHeader = reader.nextChild(entry);
+        if ("----".equals(entry.type)) {
+            parseFreeFormMetadataEntry(entry);
+        } else {
+            MpegSectionInfo dataHeader = reader.nextChild(entry);
 
-        if (dataHeader != null && "data".equals(dataHeader.type)) {
-            MpegVersionedSectionInfo data = reader.parseFlags(dataHeader);
+            if (dataHeader != null && "data".equals(dataHeader.type)) {
+                MpegVersionedSectionInfo data = reader.parseFlags(dataHeader);
 
-            // Skip next 4 bytes
-            reader.data.readInt();
+                // Skip next 4 bytes
+                reader.data.readInt();
 
-            if (data.flags == 1) {
-                storeMetadata(entry.type, reader.readUtfString((int) data.length - 16));
+                if (data.flags == 1) {
+                    storeMetadata(entry.type, reader.readUtfString((int) data.length - 16));
+                }
             }
         }
 
         reader.skip(entry);
+    }
+
+    private void parseFreeFormMetadataEntry(MpegSectionInfo entry) throws IOException {
+        MpegSectionInfo child;
+        String name = null;
+        String data = null;
+
+        while ((child = reader.nextChild(entry)) != null) {
+            if ("name".equals(child.type)) {
+                reader.parseFlags(child);
+                name = reader.readUtfString((int) child.length - 12);
+            } else if ("data".equals(child.type)) {
+                MpegVersionedSectionInfo dataInfo = reader.parseFlags(child);
+                reader.data.readInt();
+
+                if (dataInfo.flags == 1) {
+                    data = reader.readUtfString((int) dataInfo.length - 16);
+                }
+            }
+            reader.skip(child);
+        }
+
+        if (name != null && data != null) {
+            storeMetadata(name, data);
+        }
     }
 
     private void storeMetadata(String code, Object value) {
@@ -130,6 +169,10 @@ public class MpegFileLoader {
                 return "Artist";
             case "\u00a9nam":
                 return "Title";
+            case "replaygain_track_gain":
+                return "REPLAYGAIN_TRACK_GAIN";
+            case "r128_track_gain":
+                return "R128_TRACK_GAIN";
             default:
                 return null;
         }
