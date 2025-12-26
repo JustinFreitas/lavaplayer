@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.2.7] - 2025-12-25
+* Fixed MP3 ReplayGain tag overwriting issue (prevent overwriting by other TXXX tags)
+* Added comprehensive ReplayGain support for Ogg Opus (R128_TRACK_GAIN and Output Gain)
+* Added ReplayGain support for Matroska/WebM containers (Opus, Vorbis, AAC)
+* Added ReplayGain support for MP4/M4A containers (AAC)
+* Fixed buffer limit bug in OpusPacketRouter preventing correct volume application on multi-channel tracks
+
 ## [2.2.6] - 2025-12-21
 * Fixed breaking change in `new SoundCloudAudioSourceManager` in https://github.com/lavalink-devs/lavaplayer/commit/0e67279600b8be62eebc2ab114934d24c6a0b54d
 
