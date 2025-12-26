@@ -60,7 +60,7 @@ public class MpegAudioTrack extends BaseAudioTrack {
         boolean success = false;
 
         try {
-            trackConsumer = selectAudioTrack(file.getTrackList(), context);
+            trackConsumer = selectAudioTrack(file.getTrackList(), context, file.getTags());
 
             if (trackConsumer == null) {
                 StringBuilder error = new StringBuilder();
@@ -83,10 +83,10 @@ public class MpegAudioTrack extends BaseAudioTrack {
         }
     }
 
-    private MpegTrackConsumer selectAudioTrack(List<MpegTrackInfo> tracks, AudioProcessingContext context) {
+    private MpegTrackConsumer selectAudioTrack(List<MpegTrackInfo> tracks, AudioProcessingContext context, java.util.Map<String, String> tags) {
         for (MpegTrackInfo track : tracks) {
             if ("soun".equals(track.handler) && "mp4a".equals(track.codecName)) {
-                return new MpegAacTrackConsumer(context, track);
+                return new MpegAacTrackConsumer(context, track, tags);
             }
         }
         return null;

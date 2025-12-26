@@ -8,7 +8,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles processing an MKV/WEBM file for the purpose of streaming one specific track from it. Only performs seeks when
@@ -24,6 +26,7 @@ public class MatroskaStreamingFile {
     private long timecodeScale = 1000000;
     private double duration;
     private final ArrayList<MatroskaFileTrack> trackList = new ArrayList<>();
+    private final Map<String, String> tags = new HashMap<>();
     private MatroskaElement segmentElement = null;
     private MatroskaElement firstClusterElement = null;
 
@@ -60,6 +63,10 @@ public class MatroskaStreamingFile {
 
     public String getIsrc() {
         return isrc != null && isrc.isEmpty() ? null : isrc;
+    }
+
+    public Map<String, String> getTags() {
+        return tags;
     }
 
     /**
@@ -447,23 +454,28 @@ public class MatroskaStreamingFile {
     private void parseSimpleTag(MatroskaElement simpleTagElement) throws IOException {
         MatroskaElement child;
         String tagName = null;
+        String tagValue = null;
 
         while ((child = reader.readNextElement(simpleTagElement)) != null) {
             if (child.is(MatroskaElementType.TagName)) {
                 tagName = reader.asString(child);
             } else if (child.is(MatroskaElementType.TagString)) {
-                // https://www.matroska.org/technical/tagging.html
-                if ("title".equalsIgnoreCase(tagName) && title == null) {
-                    title = reader.asString(child, StandardCharsets.UTF_8);
-                } else if ("artist".equalsIgnoreCase(tagName)) {
-                    artist = reader.asString(child, StandardCharsets.UTF_8);
-                } else if ("isrc".equalsIgnoreCase(tagName)) {
-                    // probably not necessary to force a charset here
-                    isrc = reader.asString(child, StandardCharsets.UTF_8);
-                }
+                tagValue = reader.asString(child, StandardCharsets.UTF_8);
             }
 
             reader.skip(child);
+        }
+
+        if (tagName != null && tagValue != null) {
+            tags.put(tagName.toUpperCase(), tagValue);
+
+            if ("title".equalsIgnoreCase(tagName) && title == null) {
+                title = tagValue;
+            } else if ("artist".equalsIgnoreCase(tagName)) {
+                artist = tagValue;
+            } else if ("isrc".equalsIgnoreCase(tagName)) {
+                isrc = tagValue;
+            }
         }
     }
 }

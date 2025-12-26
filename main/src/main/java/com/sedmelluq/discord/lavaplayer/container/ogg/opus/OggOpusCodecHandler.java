@@ -45,7 +45,8 @@ public class OggOpusCodecHandler implements OggCodecHandler {
 
         stream.setSeekPoints(stream.createSeekTable(sampleRate));
         int channelCount = firstPacket.get(9) & 0xFF;
-        return new Blueprint(broker, channelCount, sampleRate, tags);
+        int headerGain = getHeaderGain(firstPacket);
+        return new Blueprint(broker, channelCount, sampleRate, tags, headerGain);
     }
 
     @Override
@@ -89,6 +90,10 @@ public class OggOpusCodecHandler implements OggCodecHandler {
         return Integer.reverseBytes(firstPacket.getInt(12));
     }
 
+    private int getHeaderGain(ByteBuffer firstPacket) {
+        return Short.reverseBytes(firstPacket.getShort(16));
+    }
+
     private void loadCommentsHeader(OggPacketInputStream stream, DirectBufferStreamBroker broker)
             throws IOException {
 
@@ -102,12 +107,12 @@ public class OggOpusCodecHandler implements OggCodecHandler {
     }
 
     private record Blueprint(DirectBufferStreamBroker broker, int channelCount, int sampleRate,
-                             Map<String, String> tags) implements OggTrackBlueprint {
+                             Map<String, String> tags, int headerGain) implements OggTrackBlueprint {
 
         @Override
             public OggTrackHandler loadTrackHandler(OggPacketInputStream stream) {
                 broker.clear();
-                return new OggOpusTrackHandler(stream, broker, channelCount, sampleRate, tags);
+                return new OggOpusTrackHandler(stream, broker, channelCount, sampleRate, tags, headerGain);
             }
         }
 }

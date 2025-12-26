@@ -23,12 +23,17 @@ public class AacPacketRouter {
     private Long initialProvidedTimecode;
     private AudioPipeline downstream;
     private ShortBuffer outputBuffer;
+    private float volumeMultiplier = 1.0f;
 
     public AacDecoder decoder;
 
     public AacPacketRouter(AudioProcessingContext context, Consumer<AacDecoder> decoderConfigurer) {
         this.context = context;
         this.decoderConfigurer = decoderConfigurer;
+    }
+
+    public void setVolumeMultiplier(float volumeMultiplier) {
+        this.volumeMultiplier = volumeMultiplier;
     }
 
     public void processInput(ByteBuffer inputBuffer) throws InterruptedException {
@@ -55,6 +60,9 @@ public class AacPacketRouter {
 
         if (downstream != null) {
             while (decoder.decode(outputBuffer, false)) {
+                if (volumeMultiplier != 1.0f) {
+                    OpusPacketRouter.applyVolumeMultiplierToAllFramesInBuffer(outputBuffer.capacity(), outputBuffer, volumeMultiplier);
+                }
                 downstream.process(outputBuffer);
                 outputBuffer.clear();
             }
@@ -78,6 +86,9 @@ public class AacPacketRouter {
     public void flush() throws InterruptedException {
         if (downstream != null) {
             while (decoder.decode(outputBuffer, true)) {
+                if (volumeMultiplier != 1.0f) {
+                    OpusPacketRouter.applyVolumeMultiplierToAllFramesInBuffer(outputBuffer.capacity(), outputBuffer, volumeMultiplier);
+                }
                 downstream.process(outputBuffer);
                 outputBuffer.clear();
             }

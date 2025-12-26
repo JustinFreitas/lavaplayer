@@ -169,7 +169,7 @@ public class OpusPacketRouter {
         }
 
         frameBuffer.clear();
-        frameBuffer.limit(frameSize);
+        frameBuffer.limit(frameSize * inputChannels);
 
         opusDecoder.decode(nativeBuffer, frameBuffer);
 
@@ -184,7 +184,8 @@ public class OpusPacketRouter {
         applyVolumeMultiplierToAllFramesInBuffer(length, frameBuffer, volumeMultiplier);
     }
 
-    public static void applyVolumeMultiplierToAllFramesInBuffer(int length, ShortBuffer frameBuffer, float volumeMultiplier) {
+    public static void applyVolumeMultiplierToAllFramesInBuffer(int length, ShortBuffer frameBuffer,
+            float volumeMultiplier) {
         for (int i = 0; i < length; i++) {
             short sample = frameBuffer.get(i);
             int newValue = (int) (sample * volumeMultiplier);
