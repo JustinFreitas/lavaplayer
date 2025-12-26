@@ -1,6 +1,6 @@
 
-import org.ajoberstar.grgit.Grgit
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.ajoberstar.grgit.Grgit
 
 plugins {
     // https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
@@ -15,7 +15,7 @@ logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
     group = "com.github.justinfreitas"
-    version = "v2.2.6_4"
+    version = gitVersion
 
     repositories {
         mavenLocal()
@@ -40,7 +40,6 @@ subprojects {
     pluginManager.withPlugin("com.vanniktech.maven.publish.base") {
         configure<MavenPublishBaseExtension> {
             pom {
-                name.set(project.name)
                 description.set("Lavaplayer audio player library")
                 url.set("https://github.com/sedmelluq/lavaplayer")
                 licenses {
@@ -60,6 +59,16 @@ subprojects {
                     connection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
                     developerConnection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
                     url.set("https://github.com/sedmelluq/lavaplayer")
+                }
+            }
+        }
+
+        afterEvaluate {
+            configure<MavenPublishBaseExtension> {
+                val archivesName = project.extensions.getByType<org.gradle.api.plugins.BasePluginExtension>().archivesName.get()
+                coordinates(project.group.toString(), archivesName, project.version.toString())
+                pom {
+                    name.set(archivesName)
                 }
             }
         }
