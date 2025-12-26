@@ -54,6 +54,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     private final byte[] tagHeaderBuffer;
     private final Mp3FrameReader frameReader;
     private final Map<String, String> tags;
+    private String replayGainTxxx;
 
     private int sampleRate;
     private int channelCount;
@@ -108,52 +109,15 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     }
 
     private float resolveVolumeMultiplier() {
-        // TXXX tags are checked. In ID3v2, a TXXX format is "Description\0Value".
-        // Our map parsing logic (parseIdv3TextContent) handles basic text.
-        // If getting "REPLAYGAIN_TRACK_GAIN" via a simple lookup fails, we might need to
-        // iterate.
-        // However, Mp3TrackProvider parses into 'tags' map using the Frame ID (TXXX) as
-        // key.
-        // Since there can be multiple TXXX frames, a simple Map<String, String>
-        // overwrites them!
-        // This is a limitation of the current Map structure.
-        // But let's check what we have in the map. If the last TXXX was ReplayGain, we
-        // are lucky.
-        // If not, patching the Map to be Multimap is too big.
-        // Workaround: We will use the stored TXXX value if it matches, otherwise we
-        // default to 1.0.
-
-        // Actually, looking at parseIdv3Frames, it only puts it in the map.
-        // We should just check if the stored TXXX value looks like ReplayGain logic.
-        // BUT since we can't change the parsing logic easily without rewriting the
-        // whole method,
-        // let's hope the ReplayGain tag is the one that stuck or is the only one.
-        // Wait, TXXX frames have descriptions. The 'text' returned by
-        // parseIdv3TextContent typically includes the description and value.
-        // If the parser returns "REPLAYGAIN_TRACK_GAIN\0-5.0 dB", we can parse that.
-
-        String txxx = tags.get(USER_TEXT_TAG);
-        if (txxx != null) {
-            // Check for Description=Value or Description\0Value
-            // ID3v2 TXXX is usually null-separated.
-            // Let's normalize by replacing nulls with '=' for easier parsing if needed, or
-            // just contain check.
-            String normalized = txxx.replace('\0', '=');
+        if (replayGainTxxx != null) {
+            String normalized = replayGainTxxx.replace('\0', '=');
 
             if (normalized.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
                 try {
-                    // Extract the number. Typically, it's "REPLAYGAIN_TRACK_GAIN=-5.0 dB"
-                    // If it was null separated, find the value after the tag name
                     int tagIndex = normalized.toUpperCase().indexOf("REPLAYGAIN_TRACK_GAIN");
                     if (tagIndex >= 0) {
-                        // Find where the value starts.
-                        // It might be a complex string parsing. Let's look for the number relative to
-                        // "dB"
                         int dbIndex = normalized.indexOf("dB");
                         if (dbIndex > 0) {
-                            // Search backwards for the number start
-                            // This is fuzzy.
-                            // Alternative: Split by '='
                             String[] parts = normalized.split("=");
                             if (parts.length >= 2) {
                                 String val = parts[1].replace("dB", "").trim();
@@ -165,7 +129,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
                         }
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to parse ReplayGain from TXXX: {}", txxx);
+                    log.warn("Failed to parse ReplayGain from TXXX: {}", replayGainTxxx);
                 }
             }
         }
@@ -367,6 +331,10 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
                 if (text != null) {
                     tags.put(header.id, text);
+
+                    if (USER_TEXT_TAG.equals(header.id) && text.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
+                        replayGainTxxx = text;
+                    }
                 }
             }
 
