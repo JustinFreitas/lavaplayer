@@ -1,6 +1,6 @@
 # Change Log
 
-## [2.2.7] - 2025-12-25
+## [2.2.6_3] - 2025-12-25
 * Fixed MP3 ReplayGain tag overwriting issue (prevent overwriting by other TXXX tags)
 * Added comprehensive ReplayGain support for Ogg Opus (R128_TRACK_GAIN and Output Gain)
 * Added ReplayGain support for Matroska/WebM containers (Opus, Vorbis, AAC)
