@@ -14,6 +14,7 @@ public class Mp3AudioTrack extends BaseAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(Mp3AudioTrack.class);
 
     private final SeekableInputStream inputStream;
+    private volatile boolean replayGainApplied = false;
 
     /**
      * @param trackInfo   Track info
@@ -32,10 +33,19 @@ public class Mp3AudioTrack extends BaseAudioTrack {
         try {
             provider.parseHeaders();
 
+            if (provider.getVolumeMultiplier() != 1.0f) {
+                this.replayGainApplied = true;
+            }
+
             log.debug("Starting to play MP3 track {}", getIdentifier());
             localExecutor.executeProcessingLoop(provider::provideFrames, provider::seekToTimecode);
         } finally {
             provider.close();
         }
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 }

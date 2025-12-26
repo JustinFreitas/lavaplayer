@@ -69,6 +69,7 @@ public class PrimordialAudioTrackExecutor implements AudioTrackExecutor {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public void removeMarker(TrackMarker marker) {
         markerTracker.remove(marker);
     }

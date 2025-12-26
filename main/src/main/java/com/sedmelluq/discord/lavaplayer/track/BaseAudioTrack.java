@@ -98,6 +98,7 @@ public abstract class BaseAudioTrack implements InternalAudioTrack {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public void removeMarker(TrackMarker marker) {
         getActiveExecutor().removeMarker(marker);
     }
