@@ -23,6 +23,7 @@ public class MpegAacTrackConsumer implements MpegTrackConsumer {
     private final MpegTrackInfo track;
     private final ByteBuffer inputBuffer;
     private final AacPacketRouter packetRouter;
+    private boolean replayGainApplied;
 
     /**
      * @param context Configuration and output information for processing
@@ -38,6 +39,7 @@ public class MpegAacTrackConsumer implements MpegTrackConsumer {
             float multiplier = resolveVolumeMultiplier(tags);
             if (multiplier != 1.0f) {
                 packetRouter.setVolumeMultiplier(multiplier);
+                replayGainApplied = true;
             }
         }
     }
@@ -82,6 +84,11 @@ public class MpegAacTrackConsumer implements MpegTrackConsumer {
     @Override
     public MpegTrackInfo getTrack() {
         return track;
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 
     @Override

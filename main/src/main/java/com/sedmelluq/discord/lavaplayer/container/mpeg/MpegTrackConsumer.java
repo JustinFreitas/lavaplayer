@@ -44,4 +44,11 @@ public interface MpegTrackConsumer {
      * Free all resources
      */
     void close();
+
+    /**
+     * @return True if ReplayGain was detected and applied to this track.
+     */
+    default boolean isReplayGainApplied() {
+        return false;
+    }
 }

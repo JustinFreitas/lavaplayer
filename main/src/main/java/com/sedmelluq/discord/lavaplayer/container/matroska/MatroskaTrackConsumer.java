@@ -46,4 +46,11 @@ public interface MatroskaTrackConsumer extends AutoCloseable {
      */
     @Override
     void close() throws Exception;
+
+    /**
+     * @return True if ReplayGain was detected and applied to this track.
+     */
+    default boolean isReplayGainApplied() {
+        return false;
+    }
 }

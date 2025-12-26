@@ -19,6 +19,7 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(MatroskaAudioTrack.class);
 
     private final SeekableInputStream inputStream;
+    private volatile boolean replayGainApplied = false;
 
     /**
      * @param trackInfo   Track info
@@ -72,6 +73,9 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
             }
 
             trackConsumer.initialise();
+            if (trackConsumer.isReplayGainApplied()) {
+                this.replayGainApplied = true;
+            }
             success = true;
         } finally {
             if (!success && trackConsumer != null) {
@@ -99,5 +103,11 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
         }
 
         return trackConsumer;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 }

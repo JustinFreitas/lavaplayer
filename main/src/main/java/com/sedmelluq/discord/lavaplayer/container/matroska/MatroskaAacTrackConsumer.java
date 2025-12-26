@@ -19,6 +19,7 @@ public class MatroskaAacTrackConsumer implements MatroskaTrackConsumer {
     private final MatroskaFileTrack track;
     private final ByteBuffer inputBuffer;
     private final AacPacketRouter packetRouter;
+    private boolean replayGainApplied;
 
     /**
      * @param context Configuration and output information for processing
@@ -34,6 +35,7 @@ public class MatroskaAacTrackConsumer implements MatroskaTrackConsumer {
             float multiplier = resolveVolumeMultiplier(tags);
             if (multiplier != 1.0f) {
                 packetRouter.setVolumeMultiplier(multiplier);
+                replayGainApplied = true;
             }
         }
     }
@@ -78,6 +80,11 @@ public class MatroskaAacTrackConsumer implements MatroskaTrackConsumer {
     @Override
     public MatroskaFileTrack getTrack() {
         return track;
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 
     @Override
