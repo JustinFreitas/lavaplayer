@@ -76,6 +76,7 @@ public interface AudioTrack extends AudioItem {
      * @return Clone of this track which does not share the execution state of this
      *         track
      */
+    @SuppressWarnings("unused")
     AudioTrack makeClone();
 
     /**
@@ -96,6 +97,7 @@ public interface AudioTrack extends AudioItem {
     /**
      * @return Object previously stored with {@link #setUserData(Object)}
      */
+    @SuppressWarnings("unused")
     Object getUserData();
 
     /**
@@ -104,11 +106,13 @@ public interface AudioTrack extends AudioItem {
      *         of the specified type. If it is set,
      *         but with a different type, null is returned.
      */
+    @SuppressWarnings("unused")
     <T> T getUserData(Class<T> klass);
 
     /**
      * @return True if ReplayGain was detected and applied to this track.
      */
+    @SuppressWarnings("unused")
     default boolean isReplayGainApplied() {
         return false;
     }

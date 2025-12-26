@@ -142,6 +142,7 @@ public abstract class BaseAudioTrack implements InternalAudioTrack {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public AudioTrack makeClone() {
         AudioTrack track = makeShallowClone();
         track.setUserData(userData);
@@ -164,12 +165,13 @@ public abstract class BaseAudioTrack implements InternalAudioTrack {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public Object getUserData() {
         return userData;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "unused" })
     public <T> T getUserData(Class<T> klass) {
         Object data = userData;
 

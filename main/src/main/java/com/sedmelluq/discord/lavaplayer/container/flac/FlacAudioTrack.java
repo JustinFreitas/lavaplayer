@@ -44,6 +44,7 @@ public class FlacAudioTrack extends BaseAudioTrack {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public boolean isReplayGainApplied() {
         return replayGainApplied;
     }
