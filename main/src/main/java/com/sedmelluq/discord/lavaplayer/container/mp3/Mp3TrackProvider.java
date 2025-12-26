@@ -62,6 +62,10 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     private Mp3Seeker seeker;
     private float volumeMultiplier = 1.0f;
 
+    public float getVolumeMultiplier() {
+        return volumeMultiplier;
+    }
+
     /**
      * @param context     Configuration and output information for processing. May
      *                    be null in case no frames are read, and this
@@ -445,11 +449,11 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     private record FrameHeader(String id, int size, int flags) {
 
         private boolean hasRawFormat() {
-                boolean compression = (flags & 0x0008) != 0;
-                boolean encryption = (flags & 0x0004) != 0;
-                boolean unsynchronization = (flags & 0x0002) != 0;
-                boolean dataLengthIndicator = (flags & 0x0001) != 0;
-                return !compression && !encryption && !unsynchronization && !dataLengthIndicator;
-            }
+            boolean compression = (flags & 0x0008) != 0;
+            boolean encryption = (flags & 0x0004) != 0;
+            boolean unsynchronization = (flags & 0x0002) != 0;
+            boolean dataLengthIndicator = (flags & 0x0001) != 0;
+            return !compression && !encryption && !unsynchronization && !dataLengthIndicator;
         }
+    }
 }

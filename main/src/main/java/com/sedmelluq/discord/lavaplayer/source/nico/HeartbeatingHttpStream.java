@@ -22,12 +22,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * An extension of PersistentHttpStream that allows for sending heartbeats to a secondary URL.
  */
-public class HeartbeatingHttpStream extends PersistentHttpStream {
+public final class HeartbeatingHttpStream extends PersistentHttpStream {
     private static final Logger log = LoggerFactory.getLogger(HeartbeatingHttpStream.class);
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-    private String heartbeatUrl;
-    private int heartbeatInterval;
+    private final String heartbeatUrl;
+    private final int heartbeatInterval;
     private String heartbeatPayload;
 
     private ScheduledFuture<?> heartbeatFuture;

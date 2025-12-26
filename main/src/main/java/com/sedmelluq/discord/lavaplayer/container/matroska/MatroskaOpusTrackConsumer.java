@@ -17,6 +17,7 @@ public class MatroskaOpusTrackConsumer implements MatroskaTrackConsumer {
 
     private final MatroskaFileTrack track;
     private final OpusPacketRouter opusPacketRouter;
+    private boolean replayGainApplied;
 
     /**
      * @param context Configuration and output information for processing
@@ -31,6 +32,7 @@ public class MatroskaOpusTrackConsumer implements MatroskaTrackConsumer {
             float multiplier = resolveVolumeMultiplier(tags, track.codecPrivate);
             if (multiplier != 1.0f) {
                 opusPacketRouter.setVolumeMultiplier(multiplier);
+                replayGainApplied = true;
             }
         }
     }
@@ -80,6 +82,11 @@ public class MatroskaOpusTrackConsumer implements MatroskaTrackConsumer {
     @Override
     public MatroskaFileTrack getTrack() {
         return track;
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 
     @Override

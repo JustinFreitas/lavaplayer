@@ -48,7 +48,7 @@ public enum DefaultArchitectureTypes implements ArchitectureType {
         return type;
     }
 
-    private static Map<String, ArchitectureType> aliasMap = createAliasMap();
+    private static final Map<String, ArchitectureType> aliasMap = createAliasMap();
 
     private static Map<String, ArchitectureType> createAliasMap() {
         Map<String, ArchitectureType> aliases = new HashMap<>();

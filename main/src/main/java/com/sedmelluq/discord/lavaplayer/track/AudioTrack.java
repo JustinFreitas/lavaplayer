@@ -7,7 +7,7 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
  */
 public interface AudioTrack extends AudioItem {
     /**
-     * @return Track meta information
+     * @return Track meta-information
      */
     AudioTrackInfo getInfo();
 
@@ -52,7 +52,8 @@ public interface AudioTrack extends AudioItem {
 
     /**
      * Adds a marker to the track.
-     * Markers can be used to execute code when the track reaches a certain position.
+     * Markers can be used to execute code when the track reaches a certain
+     * position.
      *
      * @param marker The marker to add.
      */
@@ -63,6 +64,7 @@ public interface AudioTrack extends AudioItem {
      *
      * @param marker The marker to remove.
      */
+    @SuppressWarnings("unused")
     void removeMarker(TrackMarker marker);
 
     /**
@@ -71,18 +73,22 @@ public interface AudioTrack extends AudioItem {
     long getDuration();
 
     /**
-     * @return Clone of this track which does not share the execution state of this track
+     * @return Clone of this track which does not share the execution state of this
+     *         track
      */
+    @SuppressWarnings("unused")
     AudioTrack makeClone();
 
     /**
-     * @return The source manager which created this track. Null if not created by a source manager directly.
+     * @return The source manager which created this track. Null if not created by a
+     *         source manager directly.
      */
     AudioSourceManager getSourceManager();
 
     /**
-     * Attach an object with this track which can later be retrieved with {@link #getUserData()}. Useful for retrieving
-     * application-specific object from the track in callbacks.
+     * Attach an object with this track which can later be retrieved with
+     * {@link #getUserData()}. Useful for retrieving
+     * an application-specific object from the track in callbacks.
      *
      * @param userData Object to store.
      */
@@ -91,12 +97,23 @@ public interface AudioTrack extends AudioItem {
     /**
      * @return Object previously stored with {@link #setUserData(Object)}
      */
+    @SuppressWarnings("unused")
     Object getUserData();
 
     /**
      * @param klass The expected class of the user data (or a superclass of it).
-     * @return Object previously stored with {@link #setUserData(Object)} if it is of the specified type. If it is set,
-     * but with a different type, null is returned.
+     * @return Object previously stored with {@link #setUserData(Object)} if it is
+     *         of the specified type. If it is set,
+     *         but with a different type, null is returned.
      */
+    @SuppressWarnings("unused")
     <T> T getUserData(Class<T> klass);
+
+    /**
+     * @return True if ReplayGain was detected and applied to this track.
+     */
+    @SuppressWarnings("unused")
+    default boolean isReplayGainApplied() {
+        return false;
+    }
 }

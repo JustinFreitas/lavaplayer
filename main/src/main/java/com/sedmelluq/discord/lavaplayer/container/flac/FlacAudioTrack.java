@@ -14,6 +14,7 @@ public class FlacAudioTrack extends BaseAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(FlacAudioTrack.class);
 
     private final SeekableInputStream inputStream;
+    private volatile boolean replayGainApplied = false;
 
     /**
      * @param trackInfo   Track info
@@ -30,11 +31,21 @@ public class FlacAudioTrack extends BaseAudioTrack {
         FlacFileLoader file = new FlacFileLoader(inputStream);
         FlacTrackProvider trackProvider = file.loadTrack(localExecutor.getProcessingContext());
 
+        if (trackProvider.getVolumeMultiplier() != 1.0f) {
+            this.replayGainApplied = true;
+        }
+
         try {
             log.debug("Starting to play FLAC track {}", getIdentifier());
             localExecutor.executeProcessingLoop(trackProvider::provideFrames, trackProvider::seekToTimecode);
         } finally {
             trackProvider.close();
         }
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 }

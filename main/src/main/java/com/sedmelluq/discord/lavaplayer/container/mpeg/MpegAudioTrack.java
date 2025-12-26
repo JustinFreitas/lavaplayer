@@ -23,6 +23,7 @@ public class MpegAudioTrack extends BaseAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(MpegAudioTrack.class);
 
     private final SeekableInputStream inputStream;
+    private volatile boolean replayGainApplied = false;
 
     /**
      * @param trackInfo   Track info
@@ -72,6 +73,9 @@ public class MpegAudioTrack extends BaseAudioTrack {
             }
 
             trackConsumer.initialise();
+            if (trackConsumer.isReplayGainApplied()) {
+                this.replayGainApplied = true;
+            }
             success = true;
             return trackConsumer;
         } catch (Exception e) {
@@ -90,5 +94,11 @@ public class MpegAudioTrack extends BaseAudioTrack {
             }
         }
         return null;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
     }
 }

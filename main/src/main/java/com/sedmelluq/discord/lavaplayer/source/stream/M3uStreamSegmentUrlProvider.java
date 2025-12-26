@@ -238,7 +238,7 @@ public abstract class M3uStreamSegmentUrlProvider {
         return false;
     }
 
-    protected static class ChannelStreamInfo {
+    protected static final class ChannelStreamInfo {
         /**
          * Stream quality extracted from stream M3U directive.
          */
@@ -254,7 +254,7 @@ public abstract class M3uStreamSegmentUrlProvider {
         }
     }
 
-    protected static class SegmentInfo {
+    protected static final class SegmentInfo {
         /**
          * URL of the segment.
          */

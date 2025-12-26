@@ -63,6 +63,7 @@ public interface AudioTrackExecutor extends AudioFrameProvider {
      *
      * @param marker The marker to remove.
      */
+    @SuppressWarnings("unused")
     void removeMarker(TrackMarker marker);
 
     /**

@@ -28,6 +28,10 @@ public class FlacTrackProvider {
     private final short[][] sampleBuffers;
     private final float volumeMultiplier;
 
+    public float getVolumeMultiplier() {
+        return volumeMultiplier;
+    }
+
     /**
      * @param context     Configuration and output information for processing
      * @param info        Track information from FLAC metadata

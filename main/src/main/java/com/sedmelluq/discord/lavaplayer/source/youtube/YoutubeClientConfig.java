@@ -7,7 +7,7 @@ import static com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeConstants.*
 import static com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeHttpContextFilter.ATTRIBUTE_USER_AGENT_SPECIFIED;
 import static com.sedmelluq.discord.lavaplayer.source.youtube.YoutubePayloadHelper.putOnceAndJoin;
 
-public class YoutubeClientConfig extends JSONObject {
+public final class YoutubeClientConfig extends JSONObject {
     public static final AndroidVersion DEFAULT_ANDROID_VERSION = AndroidVersion.ANDROID_11;
 
     public static YoutubeClientConfig ANDROID = new YoutubeClientConfig()

@@ -42,6 +42,7 @@ public class YandexMusicAudioTrack extends DelegatedAudioTrack {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public AudioTrack makeClone() {
         return new YandexMusicAudioTrack(trackInfo, sourceManager);
     }

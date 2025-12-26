@@ -86,6 +86,11 @@ public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
     }
 
     @Override
+    public boolean isReplayGainApplied() {
+        return volumeMultiplier != 1.0f;
+    }
+
+    @Override
     public void initialise() {
         ByteBuffer directPrivateData = ByteBuffer.allocateDirect(track.codecPrivate.length);
 

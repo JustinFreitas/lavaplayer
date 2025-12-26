@@ -3,7 +3,8 @@ package com.sedmelluq.discord.lavaplayer.track;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
 
 /**
- * Audio track which delegates its processing to another track. The delegate does not have to be known when the
+ * Audio track which delegates its processing to another track. The delegate
+ * does not have to be known when the
  * track is created, but is passed when processDelegate() is called.
  */
 public abstract class DelegatedAudioTrack extends BaseAudioTrack {
@@ -17,7 +18,7 @@ public abstract class DelegatedAudioTrack extends BaseAudioTrack {
     }
 
     protected synchronized void processDelegate(InternalAudioTrack delegate, LocalAudioTrackExecutor localExecutor)
-        throws Exception {
+            throws Exception {
 
         this.delegate = delegate;
 
@@ -65,6 +66,21 @@ public abstract class DelegatedAudioTrack extends BaseAudioTrack {
                     return delegate.getPosition();
                 } else {
                     return super.getPosition();
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        if (delegate != null) {
+            return delegate.isReplayGainApplied();
+        } else {
+            synchronized (this) {
+                if (delegate != null) {
+                    return delegate.isReplayGainApplied();
+                } else {
+                    return super.isReplayGainApplied();
                 }
             }
         }
