@@ -13,7 +13,7 @@ groovy = "5.0.3"
 spock-core = "2.4-groovy-5.0"
 logback-classic = "1.5.23"
 maven-publish-plugin = "0.35.0"
-commons-codec = "1.17.1"
+commons-codec = "1.21.0"
 
 [libraries]
 slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
