@@ -1,19 +1,10 @@
 .gradle
 build/
+bin/
 out/
-
-# Ignore Gradle GUI config
 gradle-app.setting
-
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
-
-# Cache of project
 .gradletasknamecache
-
-# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
-# gradle/wrapper/gradle-wrapper.properties
-
 .idea/
 jebml/src
 *.iml
@@ -36,15 +27,3 @@ version.txt
 *.html
 *.class
 /.output.txt
-/main/bin/main/certificates/bundled.txt
-/main/bin/main/certificates/dst-root-ca-x3.jks
-/natives-publish/bin/main/natives/darwin/libconnector.dylib
-/natives-publish/bin/main/natives/linux-aarch32/libconnector.so
-/natives-publish/bin/main/natives/linux-aarch64/libconnector.so
-/natives-publish/bin/main/natives/linux-arm/libconnector.so
-/natives-publish/bin/main/natives/linux-armhf/libconnector.so
-/natives-publish/bin/main/natives/linux-musl-aarch64/libconnector.so
-/natives-publish/bin/main/natives/linux-musl-x86-64/libconnector.so
-/natives-publish/bin/main/natives/linux-x86/libconnector.so
-/natives-publish/bin/main/natives/linux-x86-64/libconnector.so
-/main/bin/test/com/sedmelluq/discord/lavaplayer/LibrarySpec.groovy

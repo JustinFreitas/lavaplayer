@@ -64,10 +64,3 @@ tasks {
 mavenPublishing {
     configure(JavaLibrary(JavadocJar.Javadoc()))
 }
-
-configurations.all {
-    resolutionStrategy.dependencySubstitution {
-        // https://mvnrepository.com/artifact/commons-codec/commons-codec
-        substitute(module("commons-codec:commons-codec:1.11")).using(module(libs.commons.codec.get().toString()))
-    }
-}

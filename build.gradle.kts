@@ -6,7 +6,7 @@ plugins {
     // https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
     id("org.ajoberstar.grgit") version "5.3.3"
     // https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
-    id("de.undercouch.download") version "5.6.0"
+    id("de.undercouch.download") version "5.7.0"
     alias(libs.plugins.maven.publish.base) apply false
 }
 
@@ -21,6 +21,12 @@ allprojects {
         mavenLocal()
         mavenCentral()
         maven("https://jitpack.io")
+    }
+
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("commons-codec:commons-codec")).using(module("commons-codec:commons-codec:1.17.1"))
+        }
     }
 }
 
@@ -41,7 +47,7 @@ subprojects {
         configure<MavenPublishBaseExtension> {
             pom {
                 description.set("Lavaplayer audio player library")
-                url.set("https://github.com/sedmelluq/lavaplayer")
+                url.set("https://github.com/justinfreitas/lavaplayer")
                 licenses {
                     license {
                         name.set("MIT")
@@ -51,14 +57,18 @@ subprojects {
                 }
                 developers {
                     developer {
+                        id.set("justinfreitas")
+                        name.set("Justin Freitas")
+                    }
+                    developer {
                         id.set("sedmelluq")
                         name.set("Sedmelluq")
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
-                    developerConnection.set("scm:git:https://github.com/sedmelluq/lavaplayer.git")
-                    url.set("https://github.com/sedmelluq/lavaplayer")
+                    connection.set("scm:git:https://github.com/justinfreitas/lavaplayer.git")
+                    developerConnection.set("scm:git:https://github.com/justinfreitas/lavaplayer.git")
+                    url.set("https://github.com/justinfreitas/lavaplayer")
                 }
             }
         }
@@ -86,6 +96,6 @@ fun versionFromGit(): Pair<String, Boolean> {
             logger.lifecycle("Git state is dirty, version is a snapshot.")
         }
 
-        return if (headTag != null && clean) headTag.name to true else "${git.head().id}-SNAPSHOT" to false
+        return if (headTag != null && clean) headTag.name to true else "${git.head().id.substring(0, 7)}-SNAPSHOT" to false
     }
 }

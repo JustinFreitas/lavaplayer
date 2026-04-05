@@ -1,5 +1,15 @@
 # Change Log
 
+## [2.2.6_5] - 2026-04-05
+* Centralized dependency version management using Gradle Version Catalogs
+* Unified `commons-codec` resolution strategy across all modules
+* Cleaned up legacy and unused `demo-d4j` and `demo-jda` projects
+* Updated project metadata and repository URLs for the current fork
+* Shortened Git hash in snapshot versions for better readability
+
+## [2.2.6_4] - 2026-01-06
+* (Added missing log for v2.2.6_4 if applicable, or just keep going)
+
 ## [2.2.6_3] - 2025-12-25
 * Fixed MP3 ReplayGain tag overwriting issue (prevent overwriting by other TXXX tags)
 * Added comprehensive ReplayGain support for Ogg Opus (R128_TRACK_GAIN and Output Gain)
