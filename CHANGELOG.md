@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.6_6] - 2026-04-09
+* Updated `opus` to `1.6.1`
+* Updated `junit-platform-launcher` to `1.14.3`
+* Added and configured `com.github.ben-manes.versions` plugin at `0.53.0` for automated dependency scanning
+
 ## [2.2.6_5] - 2026-04-05
 * Centralized dependency version management using Gradle Version Catalogs
 * Unified `commons-codec` resolution strategy across all modules
