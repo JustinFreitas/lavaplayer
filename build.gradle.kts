@@ -7,7 +7,17 @@ plugins {
     id("org.ajoberstar.grgit") version "5.3.3"
     // https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
     id("de.undercouch.download") version "5.7.0"
+    alias(libs.plugins.versions)
     alias(libs.plugins.maven.publish.base) apply false
+}
+
+tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
+    rejectVersionIf {
+        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { candidate.version.uppercase().contains(it) }
+        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+        val isStable = stableKeyword || regex.matches(candidate.version)
+        !isStable
+    }
 }
 
 val (gitVersion, release) = versionFromGit()
