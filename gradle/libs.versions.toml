@@ -28,7 +28,7 @@ logback-classic = "1.5.32"
 # https://mvnrepository.com/artifact/com.vanniktech/gradle-maven-publish-plugin
 maven-publish-plugin = "0.36.0"
 # https://mvnrepository.com/artifact/commons-codec/commons-codec
-commons-codec = "1.17.1"
+commons-codec = "1.21.0"
 # https://github.com/ben-manes/gradle-versions-plugin
 ben-manes-versions = "0.53.0"
 
@@ -62,7 +62,7 @@ rhino-engine = { group = "org.mozilla", name = "rhino-engine", version.ref = "rh
 groovy = { group = "org.apache.groovy", name = "groovy", version.ref = "groovy" }
 spock-core = { group = "org.spockframework", name = "spock-core", version.ref = "spock-core" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback-classic" }
-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.14.3" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "6.0.3" }
 
 [plugins]
 maven-publish-base = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish-plugin" }
