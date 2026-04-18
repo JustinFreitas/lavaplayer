@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.6_7] - 2026-04-18
+* Updated `commons-codec` to `1.21.0`
+* Updated `junit-platform-launcher` to `6.0.3`
+
 ## [2.2.6_6] - 2026-04-09
 * Updated `opus` to `1.6.1`
 * Updated `junit-platform-launcher` to `1.14.3`
