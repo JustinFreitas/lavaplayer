@@ -2,41 +2,44 @@ package com.sedmelluq.discord.lavaplayer.tools.http;
 
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.io.TrustManagerBuilder;
-import org.apache.http.HttpResponseFactory;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.config.MessageConstraints;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.HttpClientConnectionOperator;
-import org.apache.http.conn.HttpConnectionFactory;
-import org.apache.http.conn.ManagedHttpClientConnection;
-import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.util.PublicSuffixMatcherLoader;
-import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.DefaultHttpResponseParser;
-import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.impl.execchain.ClientExecChain;
-import org.apache.http.io.SessionInputBuffer;
-import org.apache.http.message.BasicLineParser;
-import org.apache.http.message.LineParser;
-import org.apache.http.message.ParserCursor;
-import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.CharArrayBuffer;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.psl.PublicSuffixMatcherLoader;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.ProtocolVersion;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.message.RequestLine;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.http.config.Http1Config;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.impl.io.DefaultHttpResponseParser;
+import org.apache.hc.core5.http.impl.io.DefaultClassicHttpResponseFactory;
+import org.apache.hc.core5.http.message.BasicLineParser;
+import org.apache.hc.core5.http.message.LineParser;
+import org.apache.hc.core5.http.message.ParserCursor;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.util.CharArrayBuffer;
+import org.apache.hc.core5.util.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 
 import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.COMMON;
 import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.SUSPICIOUS;
@@ -53,18 +56,13 @@ public class ExtendedHttpClientBuilder extends HttpClientBuilder {
     private ConnectionManagerFactory connectionManagerFactory = ExtendedHttpClientBuilder::createDefaultConnectionManager;
 
     @Override
-    public synchronized CloseableHttpClient build() {
+    public CloseableHttpClient build() {
         setConnectionManager(createConnectionManager());
         CloseableHttpClient httpClient = super.build();
         setConnectionManager(null);
         return httpClient;
     }
 
-    /**
-     * @param sslContextOverride SSL context to make the built clients use. Note that calling
-     *                           {@link #setSSLContext(SSLContext)} has no effect because this class cannot access the
-     *                           instance set with that nor override the method.
-     */
     public void setSslContextOverride(SSLContext sslContextOverride) {
         this.sslContextOverride = sslContextOverride;
     }
@@ -83,11 +81,6 @@ public class ExtendedHttpClientBuilder extends HttpClientBuilder {
 
     public void setConnectionManagerFactory(ConnectionManagerFactory factory) {
         this.connectionManagerFactory = factory;
-    }
-
-    @Override
-    protected ClientExecChain decorateMainExec(ClientExecChain mainExec) {
-        return mainExec;
     }
 
     private HttpClientConnectionManager createConnectionManager() {
@@ -109,30 +102,24 @@ public class ExtendedHttpClientBuilder extends HttpClientBuilder {
     }
 
     private static ManagedHttpClientConnectionFactory createConnectionFactory() {
-        return new ManagedHttpClientConnectionFactory(null, (buffer, constraints) ->
-            new GarbageAllergicHttpResponseParser(
-                buffer,
-                IcyHttpLineParser.ICY_INSTANCE,
-                DefaultHttpResponseFactory.INSTANCE,
-                constraints
-            ));
+        return new ManagedHttpClientConnectionFactory(
+            null,
+            null,
+            h1Config -> new GarbageAllergicHttpResponseParser(h1Config, IcyHttpLineParser.ICY_INSTANCE)
+        );
     }
 
     private static HttpClientConnectionManager createDefaultConnectionManager(
         HttpClientConnectionOperator operator,
-        HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connectionFactory
+        ManagedHttpClientConnectionFactory connectionFactory
     ) {
-        PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager(
+        return new PoolingHttpClientConnectionManager(
             operator,
-            connectionFactory,
-            -1,
-            TimeUnit.MILLISECONDS
+            PoolConcurrencyPolicy.STRICT,
+            PoolReusePolicy.LIFO,
+            TimeValue.NEG_ONE_MILLISECOND,
+            connectionFactory
         );
-
-        manager.setMaxTotal(3000);
-        manager.setDefaultMaxPerRoute(1500);
-
-        return manager;
     }
 
     private static SSLContext setupSslContext() {
@@ -152,61 +139,61 @@ public class ExtendedHttpClientBuilder extends HttpClientBuilder {
     }
 
     private static class GarbageAllergicHttpResponseParser extends DefaultHttpResponseParser {
+        private int count = 0;
+
         public GarbageAllergicHttpResponseParser(
-            SessionInputBuffer buffer,
-            LineParser lineParser,
-            HttpResponseFactory responseFactory,
-            MessageConstraints constraints
+            Http1Config h1Config,
+            LineParser lineParser
         ) {
-            super(buffer, lineParser, responseFactory, constraints);
+            super(h1Config, lineParser, DefaultClassicHttpResponseFactory.INSTANCE);
         }
 
         @Override
-        protected boolean reject(CharArrayBuffer line, int count) {
-            if (line.length() > 4 && "ICY ".equals(line.substring(0, 4))) {
-                throw new FriendlyException("ICY protocol is not supported.", COMMON, null);
-            } else if (count > 10) {
-                throw new FriendlyException("The server is giving us garbage.", SUSPICIOUS, null);
-            }
+        protected ClassicHttpResponse createMessage(CharArrayBuffer buffer) throws IOException, HttpException {
+            try {
+                return super.createMessage(buffer);
+            } catch (HttpException e) {
+                if (buffer.length() > 4 && "ICY ".equals(buffer.substring(0, 4))) {
+                    throw new FriendlyException("ICY protocol is not supported.", COMMON, null);
+                } else if (count > 10) {
+                    throw new FriendlyException("The server is giving us garbage.", SUSPICIOUS, null);
+                }
 
-            return false;
+                count++;
+                return null;
+            }
         }
     }
 
-    private static class IcyHttpLineParser extends BasicLineParser {
+    private static class IcyHttpLineParser implements LineParser {
         private static final IcyHttpLineParser ICY_INSTANCE = new IcyHttpLineParser();
         private static final ProtocolVersion ICY_PROTOCOL = new ProtocolVersion("HTTP", 1, 0);
 
         @Override
-        public ProtocolVersion parseProtocolVersion(CharArrayBuffer buffer, ParserCursor cursor) {
-            int index = cursor.getPos();
-            int bound = cursor.getUpperBound();
-
-            if (bound >= index + 4 && "ICY ".equals(buffer.substring(index, index + 4))) {
-                cursor.updatePos(index + 4);
-                return ICY_PROTOCOL;
-            }
-
-            return super.parseProtocolVersion(buffer, cursor);
+        public RequestLine parseRequestLine(CharArrayBuffer buffer) throws ParseException {
+            return BasicLineParser.INSTANCE.parseRequestLine(buffer);
         }
 
         @Override
-        public boolean hasProtocolVersion(CharArrayBuffer buffer, ParserCursor cursor) {
-            int index = cursor.getPos();
-            int bound = cursor.getUpperBound();
-
-            if (bound >= index + 4 && "ICY ".equals(buffer.substring(index, index + 4))) {
-                return true;
+        public StatusLine parseStatusLine(CharArrayBuffer buffer) throws ParseException {
+            if (buffer.length() > 4 && "ICY ".equals(buffer.substring(0, 4))) {
+                // ICY [code] [reason]
+                return new StatusLine(ICY_PROTOCOL, 200, "OK");
             }
 
-            return super.hasProtocolVersion(buffer, cursor);
+            return BasicLineParser.INSTANCE.parseStatusLine(buffer);
+        }
+
+        @Override
+        public Header parseHeader(CharArrayBuffer buffer) throws ParseException {
+            return BasicLineParser.INSTANCE.parseHeader(buffer);
         }
     }
 
     public interface ConnectionManagerFactory {
         HttpClientConnectionManager create(
             HttpClientConnectionOperator operator,
-            HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connectionFactory
+            ManagedHttpClientConnectionFactory connectionFactory
         );
     }
 }

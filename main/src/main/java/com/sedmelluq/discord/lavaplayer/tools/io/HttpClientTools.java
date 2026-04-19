@@ -5,19 +5,19 @@ import com.sedmelluq.discord.lavaplayer.tools.ExceptionTools;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.http.ExtendedHttpClientBuilder;
-import org.apache.http.*;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.RedirectStrategy;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.cookie.CookieStore;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.*;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,30 +38,30 @@ public class HttpClientTools {
     private static final Logger log = LoggerFactory.getLogger(HttpClientTools.class);
 
     public static RequestConfig DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
-        .setConnectTimeout(3000)
-        .setConnectionRequestTimeout(3000)
-        .setSocketTimeout(3000)
-        .setCookieSpec(CookieSpecs.STANDARD)
+        .setConnectTimeout(Timeout.ofMilliseconds(3000))
+        .setConnectionRequestTimeout(Timeout.ofMilliseconds(3000))
+        .setResponseTimeout(Timeout.ofMilliseconds(3000))
+        .setCookieSpec(StandardCookieSpec.RELAXED)
         .build();
 
     private static RequestConfig NO_COOKIES_REQUEST_CONFIG = RequestConfig.custom()
-        .setConnectTimeout(3000)
-        .setConnectionRequestTimeout(3000)
-        .setSocketTimeout(3000)
-        .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
+        .setConnectTimeout(Timeout.ofMilliseconds(3000))
+        .setConnectionRequestTimeout(Timeout.ofMilliseconds(3000))
+        .setResponseTimeout(Timeout.ofMilliseconds(3000))
+        .setCookieSpec(StandardCookieSpec.IGNORE)
         .build();
 
     public static void setDefaultRequestTimeout(int timeout, int connectionRequestTimeout, int socketTimeout) {
         DEFAULT_REQUEST_CONFIG = RequestConfig.copy(DEFAULT_REQUEST_CONFIG)
-            .setConnectTimeout(timeout)
-            .setConnectionRequestTimeout(connectionRequestTimeout)
-            .setSocketTimeout(socketTimeout)
+            .setConnectTimeout(Timeout.ofMilliseconds(timeout))
+            .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionRequestTimeout))
+            .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
             .build();
 
         NO_COOKIES_REQUEST_CONFIG = RequestConfig.copy(NO_COOKIES_REQUEST_CONFIG)
-            .setConnectTimeout(timeout)
-            .setConnectionRequestTimeout(connectionRequestTimeout)
-            .setSocketTimeout(socketTimeout)
+            .setConnectTimeout(Timeout.ofMilliseconds(timeout))
+            .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionRequestTimeout))
+            .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
             .build();
     }
 
@@ -91,7 +91,7 @@ public class HttpClientTools {
 
         return new ExtendedHttpClientBuilder()
             .setDefaultCookieStore(cookieStore)
-            .setRetryHandler(NoResponseRetryHandler.RETRY_INSTANCE)
+            .setRetryStrategy(new NoResponseRetryStrategy())
             .setDefaultRequestConfig(requestConfig);
     }
 
@@ -105,7 +105,7 @@ public class HttpClientTools {
         }
 
         @Override
-        public HttpUriRequest getRedirect(HttpRequest request, HttpResponse response, HttpContext context) {
+        public URI getLocationURI(HttpRequest request, HttpResponse response, HttpContext context) {
             return null;
         }
     }
@@ -116,7 +116,7 @@ public class HttpClientTools {
      * @return A redirect location if the status code indicates a redirect and the Location header is present.
      */
     public static String getRedirectLocation(String requestUrl, HttpResponse response) {
-        if (!isRedirectStatus(response.getStatusLine().getStatusCode())) {
+        if (!isRedirectStatus(response.getCode())) {
             return null;
         }
 
@@ -162,7 +162,7 @@ public class HttpClientTools {
      * @throws IOException if this status code indicates an error with a response body
      */
     public static void assertSuccessWithContent(HttpResponse response, String context) throws IOException {
-        int statusCode = response.getStatusLine().getStatusCode();
+        int statusCode = response.getCode();
 
         if (!isSuccessWithContent(statusCode)) {
             throw new IOException("Invalid status code for " + context + ": " + statusCode);
@@ -175,7 +175,7 @@ public class HttpClientTools {
      * @throws IOException if this status code indicates an error with a response body
      */
     public static void assertSuccessWithRedirectContent(HttpResponse response, String context) throws IOException {
-        int statusCode = response.getStatusLine().getStatusCode();
+        int statusCode = response.getCode();
 
         if (!isRedirectStatus(statusCode)) {
             throw new IOException("Invalid status code for " + context + ": " + statusCode);
@@ -192,14 +192,21 @@ public class HttpClientTools {
         return contentType != null && contentType.startsWith(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-    public static void assertJsonContentType(HttpResponse response) throws IOException {
+    public static void assertJsonContentType(ClassicHttpResponse response) throws IOException {
         if (!HttpClientTools.hasJsonContentType(response)) {
+            String content;
+            try {
+                content = EntityUtils.toString(response.getEntity());
+            } catch (ParseException e) {
+                content = "Unparseable entity: " + e.getMessage();
+            }
+
             throw ExceptionTools.throwWithDebugInfo(
                 log,
                 null,
                 "Expected JSON content type, got " + HttpClientTools.getRawContentType(response),
                 "responseContent",
-                EntityUtils.toString(response.getEntity())
+                content
             );
         }
     }
@@ -262,9 +269,9 @@ public class HttpClientTools {
      * @return Response as a JsonBrowser instance. null in case of 404.
      * @throws IOException On network error or for non-200 response code.
      */
-    public static JsonBrowser fetchResponseAsJson(HttpInterface httpInterface, HttpUriRequest request) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
-            int statusCode = response.getStatusLine().getStatusCode();
+    public static JsonBrowser fetchResponseAsJson(HttpInterface httpInterface, ClassicHttpRequest request) throws IOException {
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
+            int statusCode = response.getCode();
 
             if (statusCode == HttpStatus.SC_NOT_FOUND) {
                 return null;
@@ -286,9 +293,9 @@ public class HttpClientTools {
      * @return Array of lines from the response
      * @throws IOException On network error or for non-200 response code.
      */
-    public static String[] fetchResponseLines(HttpInterface httpInterface, HttpUriRequest request, String name) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
-            int statusCode = response.getStatusLine().getStatusCode();
+    public static String[] fetchResponseLines(HttpInterface httpInterface, ClassicHttpRequest request, String name) throws IOException {
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
+            int statusCode = response.getCode();
             if (!isSuccessWithContent(statusCode)) {
                 throw new IOException("Unexpected response code " + statusCode + " from " + name);
             }
@@ -307,18 +314,27 @@ public class HttpClientTools {
         return header != null ? header.getValue() : null;
     }
 
-    private static class NoResponseRetryHandler extends DefaultHttpRequestRetryHandler {
-        private static final NoResponseRetryHandler RETRY_INSTANCE = new NoResponseRetryHandler();
+    private static class NoResponseRetryStrategy implements org.apache.hc.client5.http.HttpRequestRetryStrategy {
+        @Override
+        public boolean retryRequest(HttpRequest request, IOException exception, int executionCount, HttpContext context) {
+            if (executionCount >= 5) {
+                return false;
+            }
+            if (exception instanceof org.apache.hc.core5.http.NoHttpResponseException) {
+                return true;
+            }
+            return false;
+        }
 
         @Override
-        public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
-            boolean retry = super.retryRequest(exception, executionCount, context);
+        public boolean retryRequest(HttpResponse response, int executionCount, HttpContext context) {
+            return false;
+        }
 
-            if (!retry && exception instanceof NoHttpResponseException && executionCount < 5) {
-                return true;
-            } else {
-                return retry;
-            }
+        @Override
+        public org.apache.hc.core5.util.TimeValue getRetryInterval(HttpResponse response, int executionCount, HttpContext context) {
+            return org.apache.hc.core5.util.TimeValue.ZERO_MILLISECONDS;
         }
     }
 }
+

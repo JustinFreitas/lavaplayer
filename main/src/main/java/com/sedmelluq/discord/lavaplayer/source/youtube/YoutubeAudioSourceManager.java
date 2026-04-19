@@ -15,11 +15,11 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -314,12 +314,12 @@ public class YoutubeAudioSourceManager implements AudioSourceManager, HttpConfig
         @Override
         public AudioItem anonymous(String videoIds) {
             try (HttpInterface httpInterface = getHttpInterface()) {
-                try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/watch_videos?video_ids=" + videoIds))) {
+                try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/watch_videos?video_ids=" + videoIds))) {
                     HttpClientTools.assertSuccessWithContent(response, "playlist response");
                     HttpClientContext context = httpInterface.getContext();
                     // youtube currently transforms watch_video links into a link with a video id and a list id.
                     // because that's what happens, we can simply re-process with the redirected link
-                    List<URI> redirects = context.getRedirectLocations();
+                    List<URI> redirects = context.getRedirectLocations() != null ? context.getRedirectLocations().getAll() : null;
                     if (redirects != null && !redirects.isEmpty()) {
                         return new AudioReference(redirects.get(0).toString(), null);
                     } else {
@@ -338,3 +338,4 @@ public class YoutubeAudioSourceManager implements AudioSourceManager, HttpConfig
         }
     }
 }
+

@@ -6,9 +6,9 @@ import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeTrackJsonData;
 import com.sedmelluq.discord.lavaplayer.tools.DataFormatTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.ContentType;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ContentType;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -51,7 +51,7 @@ public class LegacyDashMpdFormatsExtractor implements YoutubeTrackFormatExtracto
     ) throws Exception {
         String resolvedDashUrl = signatureResolver.resolveDashUrl(httpInterface, playerScriptUrl, dashUrl);
 
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(resolvedDashUrl))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(resolvedDashUrl))) {
             HttpClientTools.assertSuccessWithContent(response, "track info page response");
 
             Document document = Jsoup.parse(response.getEntity().getContent(), StandardCharsets.UTF_8.name(), "",
@@ -93,3 +93,4 @@ public class LegacyDashMpdFormatsExtractor implements YoutubeTrackFormatExtracto
         return tracks;
     }
 }
+

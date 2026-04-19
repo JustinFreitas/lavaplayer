@@ -9,10 +9,10 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
 import com.sedmelluq.discord.lavaplayer.track.*;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +56,10 @@ public class YoutubeSearchProvider implements YoutubeSearchResultLoader {
                 .withRootField("query", query)
                 .withRootField("params", SEARCH_PARAMS)
                 .setAttribute(httpInterface);
-            StringEntity payload = new StringEntity(clientConfig.toJsonString(), "UTF-8");
+            StringEntity payload = new org.apache.hc.core5.http.io.entity.StringEntity(clientConfig.toJsonString(), org.apache.hc.core5.http.ContentType.APPLICATION_JSON);
             post.setEntity(payload);
 
-            try (CloseableHttpResponse response = httpInterface.execute(post)) {
+            try (ClassicHttpResponse response = httpInterface.execute(post)) {
                 HttpClientTools.assertSuccessWithContent(response, "search response");
 
                 String responseText = EntityUtils.toString(response.getEntity(), UTF_8);
@@ -124,3 +124,5 @@ public class YoutubeSearchProvider implements YoutubeSearchResultLoader {
         return trackFactory.apply(info);
     }
 }
+
+

@@ -1,6 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.tools.http;
 
-import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 
 public class HttpContextRetryCounter {
     private final String attributeName;

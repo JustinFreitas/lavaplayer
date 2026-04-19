@@ -6,11 +6,12 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,8 +248,8 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
         String clientConfigJson = clientConfig.toJsonString();
         log.debug("Loading track info with payload: {}", clientConfigJson);
 
-        post.setEntity(new StringEntity(clientConfigJson, "UTF-8"));
-        try (CloseableHttpResponse response = httpInterface.execute(post)) {
+        post.setEntity(new org.apache.hc.core5.http.io.entity.StringEntity(clientConfigJson, org.apache.hc.core5.http.ContentType.APPLICATION_JSON));
+        try (ClassicHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithContent(response, "video page response");
 
             String responseText = EntityUtils.toString(response.getEntity(), UTF_8);
@@ -269,6 +270,8 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
                 throw new FriendlyException("Received unexpected response from YouTube.", SUSPICIOUS,
                     new RuntimeException("Failed to parse: " + responseText, e));
             }
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
@@ -299,7 +302,7 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
     private String fetchScript(String videoId, HttpInterface httpInterface) throws IOException {
         long now = System.currentTimeMillis();
 
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/embed/" + videoId))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/embed/" + videoId))) {
             HttpClientTools.assertSuccessWithContent(response, "youtube embed video id");
 
             String responseText = EntityUtils.toString(response.getEntity());
@@ -313,6 +316,8 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
             cachedPlayerScript = new CachedPlayerScript(fetchedPlayerScript, now);
 
             return fetchedPlayerScript;
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 

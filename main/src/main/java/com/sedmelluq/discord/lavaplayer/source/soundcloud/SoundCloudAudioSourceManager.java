@@ -10,14 +10,14 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
 import com.sedmelluq.discord.lavaplayer.track.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -285,8 +285,8 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
     }
 
     private UserInfo findUserIdFromLikedList(HttpInterface httpInterface, String likedListUrl) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(likedListUrl))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(likedListUrl))) {
+            int statusCode = response.getCode();
 
             if (statusCode == HttpStatus.SC_NOT_FOUND) {
                 return null;
@@ -302,7 +302,7 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
     private JsonBrowser loadLikedListForUserId(HttpInterface httpInterface, UserInfo userInfo) throws IOException {
         URI uri = URI.create("https://api-v2.soundcloud.com/users/" + userInfo.id + "/likes?limit=200&offset=0");
 
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(uri))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(uri))) {
             HttpClientTools.assertSuccessWithContent(response, "liked tracks response");
             return JsonBrowser.parse(response.getEntity().getContent());
         }
@@ -359,7 +359,7 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
 
         try (
             HttpInterface httpInterface = getHttpInterface();
-            CloseableHttpResponse response = httpInterface.execute(new HttpGet(buildSearchUri(query, offset, limit)))
+            ClassicHttpResponse response = httpInterface.execute(new HttpGet(buildSearchUri(query, offset, limit)))
         ) {
             return loadSearchResultsFromResponse(response, query);
         } catch (IOException e) {
@@ -367,7 +367,7 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
         }
     }
 
-    private AudioItem loadSearchResultsFromResponse(HttpResponse response, String query) throws IOException {
+    private AudioItem loadSearchResultsFromResponse(ClassicHttpResponse response, String query) throws IOException {
         try {
             JsonBrowser searchResults = JsonBrowser.parse(response.getEntity().getContent());
             return extractTracksFromSearchResults(query, searchResults);
@@ -514,3 +514,4 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
         }
     }
 }
+

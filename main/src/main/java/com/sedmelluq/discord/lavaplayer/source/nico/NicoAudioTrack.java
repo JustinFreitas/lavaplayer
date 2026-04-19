@@ -10,12 +10,13 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.DelegatedAudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.parser.Parser;
@@ -74,7 +75,7 @@ public class NicoAudioTrack extends DelegatedAudioTrack {
     private JsonBrowser loadVideoApi(HttpInterface httpInterface) throws IOException {
         String apiUrl = "https://www.nicovideo.jp/api/watch/v3_guest/" + getIdentifier() + "?_frontendId=6&_frontendVersion=0&actionTrackId=" + actionTrackId + "&i18nLanguage=en-us";
 
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(apiUrl))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(apiUrl))) {
             HttpClientTools.assertSuccessWithContent(response, "api response");
 
             return JsonBrowser.parse(response.getEntity().getContent()).get("data");
@@ -82,10 +83,16 @@ public class NicoAudioTrack extends DelegatedAudioTrack {
     }
 
     private JsonBrowser loadVideoMainPage(HttpInterface httpInterface) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(trackInfo.uri))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(trackInfo.uri))) {
             HttpClientTools.assertSuccessWithContent(response, "video main page");
 
-            String urlEncodedData = DataFormatTools.extractBetween(EntityUtils.toString(response.getEntity()), "data-api-data=\"", "\"");
+            String urlEncodedData;
+            try {
+                urlEncodedData = DataFormatTools.extractBetween(EntityUtils.toString(response.getEntity()), "data-api-data=\"", "\"");
+            } catch (ParseException e) {
+                throw new IOException(e);
+            }
+
             String watchData = Parser.unescapeEntities(urlEncodedData, false);
 
             return JsonBrowser.parse(watchData);
@@ -119,8 +126,8 @@ public class NicoAudioTrack extends DelegatedAudioTrack {
         request.addHeader("Origin", "https://www.nicovideo.jp");
         request.setEntity(new StringEntity(watchData.toString()));
 
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
+            int statusCode = response.getCode();
 
             if (statusCode != HttpStatus.SC_CREATED) {
                 throw new IOException("Unexpected status code from playback parameters page: " + statusCode);
@@ -220,3 +227,4 @@ public class NicoAudioTrack extends DelegatedAudioTrack {
         return sourceManager;
     }
 }
+

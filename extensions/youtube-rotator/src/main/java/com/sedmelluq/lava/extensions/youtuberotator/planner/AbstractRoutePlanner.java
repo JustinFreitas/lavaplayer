@@ -4,19 +4,16 @@ import com.sedmelluq.lava.extensions.youtuberotator.tools.Tuple;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.CombinedIpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpAddressTools;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.ProtocolException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.conn.SchemePortResolver;
-import org.apache.http.conn.UnsupportedSchemeException;
-import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.conn.routing.HttpRoutePlanner;
-import org.apache.http.impl.conn.DefaultSchemePortResolver;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.Args;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.ProtocolException;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.SchemePortResolver;
+import org.apache.hc.client5.http.HttpRoute;
+import org.apache.hc.client5.http.routing.HttpRoutePlanner;
+import org.apache.hc.client5.http.impl.DefaultSchemePortResolver;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,8 +95,7 @@ public abstract class AbstractRoutePlanner implements HttpRoutePlanner {
     }
 
     @Override
-    public HttpRoute determineRoute(final HttpHost host, final HttpRequest request, final HttpContext context) throws HttpException {
-        Args.notNull(request, "Request");
+    public HttpRoute determineRoute(final HttpHost host, final HttpContext context) throws HttpException {
         if (host == null) {
             throw new ProtocolException("Target host is not specified");
         }
@@ -107,18 +103,14 @@ public abstract class AbstractRoutePlanner implements HttpRoutePlanner {
         final RequestConfig config = clientContext.getRequestConfig();
         int remotePort;
         if (host.getPort() <= 0) {
-            try {
-                remotePort = schemePortResolver.resolve(host);
-            } catch (final UnsupportedSchemeException e) {
-                throw new HttpException(e.getMessage());
-            }
+            remotePort = schemePortResolver.resolve(host);
         } else
             remotePort = host.getPort();
 
         final Tuple<Inet4Address, Inet6Address> remoteAddresses = IpAddressTools.getRandomAddressesFromHost(host);
         final Tuple<InetAddress, InetAddress> addresses = determineAddressPair(remoteAddresses);
 
-        final HttpHost target = new HttpHost(addresses.r, host.getHostName(), remotePort, host.getSchemeName());
+        final HttpHost target = new HttpHost(host.getSchemeName(), addresses.r, host.getHostName(), remotePort);
         final HttpHost proxy = config.getProxy();
         final boolean secure = target.getSchemeName().equalsIgnoreCase("https");
         clientContext.setAttribute(CHOSEN_IP_ATTRIBUTE, addresses.l);

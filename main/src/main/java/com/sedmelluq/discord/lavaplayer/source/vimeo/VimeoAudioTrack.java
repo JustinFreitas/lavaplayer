@@ -14,8 +14,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.DelegatedAudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +77,8 @@ public class VimeoAudioTrack extends DelegatedAudioTrack {
     /** Vimeo HLS uses separate audio and video. This extracts the audio playlist URL from EXT-X-MEDIA */
     private String extractHlsAudioPlaylistUrl(HttpInterface httpInterface, String videoPlaylistUrl) throws IOException {
         String url = null;
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(videoPlaylistUrl))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(videoPlaylistUrl))) {
+            int statusCode = response.getCode();
 
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new FriendlyException("Server responded with an error.", SUSPICIOUS,
@@ -114,3 +114,4 @@ public class VimeoAudioTrack extends DelegatedAudioTrack {
         return sourceManager;
     }
 }
+

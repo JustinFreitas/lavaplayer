@@ -1,8 +1,8 @@
 package com.sedmelluq.lava.extensions.youtuberotator.tools.ip;
 
 import com.sedmelluq.lava.extensions.youtuberotator.tools.Tuple;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHost;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;

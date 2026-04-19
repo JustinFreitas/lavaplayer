@@ -11,15 +11,16 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import org.apache.http.Header;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +148,7 @@ public class TwitchStreamAudioSourceManager implements AudioSourceManager, HttpC
      * @param url Request URL
      * @return Request with necessary headers attached.
      */
-    public HttpUriRequest createGetRequest(String url) {
+    public ClassicHttpRequest createGetRequest(String url) {
         return addClientHeaders(new HttpGet(url), twitchClientId, twitchDeviceId);
     }
 
@@ -155,7 +156,7 @@ public class TwitchStreamAudioSourceManager implements AudioSourceManager, HttpC
      * @param url Request URL
      * @return Request with necessary headers attached.
      */
-    public HttpUriRequest createGetRequest(URI url) {
+    public ClassicHttpRequest createGetRequest(URI url) {
         return addClientHeaders(new HttpGet(url), twitchClientId, twitchDeviceId);
     }
 
@@ -176,7 +177,7 @@ public class TwitchStreamAudioSourceManager implements AudioSourceManager, HttpC
         httpInterfaceManager.configureBuilder(configurator);
     }
 
-    private static HttpUriRequest addClientHeaders(HttpUriRequest request, String clientId, String deviceId) {
+    private static ClassicHttpRequest addClientHeaders(ClassicHttpRequest request, String clientId, String deviceId) {
         request.setHeader("Client-ID", clientId);
         request.setHeader("X-Device-ID", deviceId);
         return request;
@@ -217,18 +218,18 @@ public class TwitchStreamAudioSourceManager implements AudioSourceManager, HttpC
             try (HttpInterface httpInterface = getHttpInterface()) {
                 HttpGet get = new HttpGet(TwitchConstants.TWITCH_URL);
                 get.setHeader("Accept", "text/html");
-                CloseableHttpResponse response = httpInterface.execute(get);
+                ClassicHttpResponse response = httpInterface.execute(get);
                 HttpClientTools.assertSuccessWithContent(response, "twitch main page");
 
                 String responseText = EntityUtils.toString(response.getEntity());
                 twitchClientId = DataFormatTools.extractBetween(responseText, "clientId=\"", "\"");
 
-                for (Header header : response.getAllHeaders()) {
+                for (Header header : response.getHeaders()) {
                     if (header.getName().contains("Set-Cookie") && header.getValue().contains("unique_id=")) {
                         twitchDeviceId = DataFormatTools.extractBetween(header.toString(), "unique_id=", ";");
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException | ParseException e) {
                 throw new FriendlyException("Loading Twitch main page failed.", SUSPICIOUS, e);
             }
         }

@@ -10,10 +10,10 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.info.AudioTrackInfoBuilder;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -100,7 +100,7 @@ public class GetyarnAudioSourceManager implements HttpConfigurable, AudioSourceM
     }
 
     private AudioTrack extractVideoUrlFromPage(AudioReference reference) {
-        try (final CloseableHttpResponse response = getHttpInterface().execute(new HttpGet(reference.identifier))) {
+        try (final ClassicHttpResponse response = getHttpInterface().execute(new HttpGet(reference.identifier))) {
             final String html = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
             final Document document = Jsoup.parse(html);
 

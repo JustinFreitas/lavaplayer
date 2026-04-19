@@ -5,14 +5,13 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextFilter;
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextRetryCounter;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.client5.http.cookie.CookieStore;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +51,7 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
     }
 
     @Override
-    public void onRequest(HttpClientContext context, HttpUriRequest request, boolean isRepetition) {
+    public void onRequest(HttpClientContext context, ClassicHttpRequest request, boolean isRepetition) {
         if (!isRepetition) {
             context.removeAttribute(ATTRIBUTE_RESET_RETRY);
         }
@@ -77,15 +76,11 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
             request.setHeader("Authorization", "Bearer " + accessToken);
         } else {
             try {
-                URI uri = new URIBuilder(request.getURI())
+                URI uri = new URIBuilder(request.getUri())
                     .setParameter("key", YoutubeConstants.INNERTUBE_ANDROID_API_KEY)
                     .build();
 
-                if (request instanceof HttpRequestBase) {
-                    ((HttpRequestBase) request).setURI(uri);
-                } else {
-                    throw new IllegalStateException("Cannot update request URI.");
-                }
+                request.setUri(uri);
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -93,14 +88,14 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestResponse(HttpClientContext context, HttpUriRequest request, HttpResponse response) {
-        if (response.getStatusLine().getStatusCode() == 429) {
+    public boolean onRequestResponse(HttpClientContext context, ClassicHttpRequest request, HttpResponse response) {
+        if (response.getCode() == 429) {
             throw new FriendlyException("This IP address has been blocked by YouTube (429).", COMMON, null);
         }
 
         if (tokenTracker.isTokenFetchContext(context) || retryCounter.getRetryCount(context) >= 1) {
             return false;
-        } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+        } else if (response.getCode() == HttpStatus.SC_UNAUTHORIZED) {
             tokenTracker.updateAccessToken();
             return true;
         } else {
@@ -109,7 +104,7 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestException(HttpClientContext context, HttpUriRequest request, Throwable error) {
+    public boolean onRequestException(HttpClientContext context, ClassicHttpRequest request, Throwable error) {
         // Always retry once in case of connection reset exception.
         if (HttpClientTools.isConnectionResetException(error)) {
             if (context.getAttribute(ATTRIBUTE_RESET_RETRY) == null) {
@@ -121,3 +116,4 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
         return false;
     }
 }
+

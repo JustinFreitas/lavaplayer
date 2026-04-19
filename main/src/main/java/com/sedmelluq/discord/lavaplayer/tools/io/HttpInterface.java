@@ -2,14 +2,15 @@ package com.sedmelluq.discord.lavaplayer.tools.io;
 
 import com.sedmelluq.discord.lavaplayer.tools.ExceptionTools;
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextFilter;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 /**
@@ -22,7 +23,7 @@ public class HttpInterface implements Closeable {
     private final HttpClientContext context;
     private final boolean ownedClient;
     private final HttpContextFilter filter;
-    private HttpUriRequest lastRequest;
+    private ClassicHttpRequest lastRequest;
     private boolean available;
 
     /**
@@ -63,14 +64,14 @@ public class HttpInterface implements Closeable {
      * @return Closeable response from the server.
      * @throws IOException On network error.
      */
-    public CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
+    public ClassicHttpResponse execute(ClassicHttpRequest request) throws IOException {
         boolean isRepeated = false;
 
         while (true) {
             filter.onRequest(context, request, isRepeated);
 
             try {
-                CloseableHttpResponse response = client.execute(request, context);
+                ClassicHttpResponse response = client.execute(request, context);
                 lastRequest = request;
 
                 if (!filter.onRequestResponse(context, request, response)) {
@@ -102,12 +103,16 @@ public class HttpInterface implements Closeable {
      * Null if no requests have been executed. Undefined state if last request threw an exception.
      */
     public URI getFinalLocation() {
-        List<URI> redirectLocations = context.getRedirectLocations();
+        List<URI> redirectLocations = context.getRedirectLocations() != null ? context.getRedirectLocations().getAll() : null;
 
         if (redirectLocations != null && !redirectLocations.isEmpty()) {
             return redirectLocations.get(redirectLocations.size() - 1);
         } else {
-            return lastRequest != null ? lastRequest.getURI() : null;
+            try {
+            return lastRequest != null ? lastRequest.getUri() : null;
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         }
     }
 
@@ -135,3 +140,4 @@ public class HttpInterface implements Closeable {
         }
     }
 }
+

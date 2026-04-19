@@ -10,9 +10,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,9 +48,9 @@ public class YoutubeMixProvider implements YoutubeMixLoader {
             .withRootField("videoId", selectedVideoId)
             .withRootField("playlistId", mixId)
             .setAttribute(httpInterface);
-        StringEntity payload = new StringEntity(clientConfig.toJsonString(), "UTF-8");
+        StringEntity payload = new org.apache.hc.core5.http.io.entity.StringEntity(clientConfig.toJsonString(), org.apache.hc.core5.http.ContentType.APPLICATION_JSON);
         post.setEntity(payload);
-        try (CloseableHttpResponse response = httpInterface.execute(post)) {
+        try (ClassicHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithContent(response, "mix response");
 
             JsonBrowser body = JsonBrowser.parse(response.getEntity().getContent());
@@ -115,3 +115,5 @@ public class YoutubeMixProvider implements YoutubeMixLoader {
         return null;
     }
 }
+
+

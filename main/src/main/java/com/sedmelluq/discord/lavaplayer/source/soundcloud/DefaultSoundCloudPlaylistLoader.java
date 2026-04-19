@@ -9,9 +9,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +99,7 @@ public class DefaultSoundCloudPlaylistLoader implements SoundCloudPlaylistLoader
             int last = Math.min(i + 50, numTrackIds);
             List<String> trackIdSegment = trackIds.subList(i, last);
 
-            try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(buildTrackListUrl(trackIdSegment)))) {
+            try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(buildTrackListUrl(trackIdSegment)))) {
                 HttpClientTools.assertSuccessWithContent(response, "track list response");
 
                 JsonBrowser trackList = JsonBrowser.parse(response.getEntity().getContent());
@@ -164,3 +164,4 @@ public class DefaultSoundCloudPlaylistLoader implements SoundCloudPlaylistLoader
         ));
     }
 }
+

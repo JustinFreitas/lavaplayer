@@ -11,9 +11,9 @@ import com.sedmelluq.discord.lavaplayer.tools.io.SeekableInputStream;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.Units.CONTENT_LENGTH_UNKNOW
  */
 public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(YoutubeMpegStreamAudioTrack.class);
-    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setSocketTimeout(3000).setConnectionRequestTimeout(3000).setConnectTimeout(3000).build();
+    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setResponseTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(3000)).setConnectionRequestTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(3000)).setConnectTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(3000)).build();
     private static final long EMPTY_RETRY_THRESHOLD_MS = 400;
     private static final long EMPTY_RETRY_INTERVAL_MS = 50;
     private static final long MAX_REWIND_TIME = 43200; // Seconds
@@ -269,3 +269,5 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
         }
     }
 }
+
+

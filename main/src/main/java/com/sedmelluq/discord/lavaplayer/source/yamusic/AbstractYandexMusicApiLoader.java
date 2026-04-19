@@ -8,8 +8,8 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,8 +30,8 @@ public abstract class AbstractYandexMusicApiLoader implements YandexMusicApiLoad
         try (HttpInterface httpInterface = httpInterfaceManager.getInterface()) {
             String responseText;
 
-            try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(url))) {
-                int statusCode = response.getStatusLine().getStatusCode();
+            try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(url))) {
+                int statusCode = response.getCode();
                 if (statusCode != 200) {
                     throw new IOException("Invalid status code: " + statusCode);
                 }
@@ -65,3 +65,4 @@ public abstract class AbstractYandexMusicApiLoader implements YandexMusicApiLoad
         T extract(HttpInterface httpInterface, JsonBrowser result) throws Exception;
     }
 }
+

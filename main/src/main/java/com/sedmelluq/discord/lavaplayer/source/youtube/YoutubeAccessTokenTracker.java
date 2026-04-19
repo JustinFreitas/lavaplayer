@@ -5,18 +5,20 @@ import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
-import org.apache.http.Header;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,16 +233,18 @@ public class YoutubeAccessTokenTracker {
 
             YoutubeClientConfig clientConfig = YoutubeClientConfig.ANDROID.copy().setAttribute(httpInterface);
             HttpPost visitorIdPost = new HttpPost(VISITOR_ID_URL);
-            StringEntity visitorIdPayload = new StringEntity(clientConfig.toJsonString(), "UTF-8");
+            StringEntity visitorIdPayload = new org.apache.hc.core5.http.io.entity.StringEntity(clientConfig.toJsonString(), org.apache.hc.core5.http.ContentType.APPLICATION_JSON);
             visitorIdPost.setEntity(visitorIdPayload);
 
-            try (CloseableHttpResponse response = httpInterface.execute(visitorIdPost)) {
+            try (ClassicHttpResponse response = httpInterface.execute(visitorIdPost)) {
                 HttpClientTools.assertSuccessWithContent(response, "youtube visitor id");
 
                 String responseText = EntityUtils.toString(response.getEntity());
                 JsonBrowser json = JsonBrowser.parse(responseText);
 
                 return json.get("responseContext").get("visitorData").text();
+            } catch (ParseException e) {
+                throw new IOException(e);
             }
         }
     }
@@ -250,11 +254,11 @@ public class YoutubeAccessTokenTracker {
         StringEntity masterTokenPayload = new StringEntity(String.format(TOKEN_PAYLOAD, email, password));
         masterTokenPost.setEntity(masterTokenPayload);
 
-        try (CloseableHttpResponse masterTokenResponse = httpInterface.execute(masterTokenPost)) {
+        try (ClassicHttpResponse masterTokenResponse = httpInterface.execute(masterTokenPost)) {
             String responseText = EntityUtils.toString(masterTokenResponse.getEntity(), UTF_8);
             JsonBrowser jsonBrowser = JsonBrowser.parse(responseText);
 
-            if (masterTokenResponse.getStatusLine().getStatusCode() == 400) {
+            if (masterTokenResponse.getCode() == 400) {
                 loggedAgeRestrictionsWarning = true;
             }
 
@@ -273,6 +277,8 @@ public class YoutubeAccessTokenTracker {
             }
 
             return jsonBrowser.get("aas_et").text();
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
@@ -285,9 +291,9 @@ public class YoutubeAccessTokenTracker {
                 cachedAuthScript.clientId,
                 cachedAuthScript.clientSecret,
                 masterToken
-            ), "UTF-8"));
+            ), ContentType.APPLICATION_JSON));
 
-            try (CloseableHttpResponse response = httpInterface.execute(post)) {
+            try (ClassicHttpResponse response = httpInterface.execute(post)) {
                 HttpClientTools.assertSuccessWithContent(response, "access token tv response");
 
                 String responseText = EntityUtils.toString(response.getEntity(), UTF_8);
@@ -295,6 +301,8 @@ public class YoutubeAccessTokenTracker {
 
                 accessTokenRefreshInterval = TimeUnit.SECONDS.toMillis(responseJson.get("expires_in").asLong(DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL));
                 return responseJson.get("access_token").text();
+            } catch (ParseException e) {
+                throw new IOException(e);
             }
         } else {
             List<NameValuePair> params = new ArrayList<>();
@@ -305,12 +313,14 @@ public class YoutubeAccessTokenTracker {
             params.add(new BasicNameValuePair("Token", masterToken));
             HttpPost post = new HttpPost(buildUri(ANDROID_AUTH_URL, params));
 
-            try (CloseableHttpResponse response = httpInterface.execute(post)) {
+            try (ClassicHttpResponse response = httpInterface.execute(post)) {
                 HttpClientTools.assertSuccessWithContent(response, "access token android response");
 
                 Map<String, String> map = convertToMapLayout(EntityUtils.toString(response.getEntity()));
                 accessTokenRefreshInterval = TimeUnit.SECONDS.toMillis(Long.parseLong(map.get("ExpiresInDurationSec")));
                 return map.get("Auth");
+            } catch (ParseException e) {
+                throw new IOException(e);
             }
         }
     }
@@ -322,7 +332,7 @@ public class YoutubeAccessTokenTracker {
         StringEntity payload = new StringEntity(String.format(TOKEN_PAYLOAD, email, password));
         post.setEntity(payload);
 
-        try (CloseableHttpResponse response = httpInterface.execute(post)) {
+        try (ClassicHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithContent(response, "creating android profile response");
         }
     }
@@ -331,21 +341,21 @@ public class YoutubeAccessTokenTracker {
         log.warn("Not successful attempt to login into account " + jsonBrowser.get("email").text() + ", trying obtain oauth2 token through continue url...");
 
         HttpPost post = new HttpPost(jsonBrowser.get("continueUrl").text());
-        RequestConfig config = RequestConfig.custom().setCookieSpec(CookieSpecs.NETSCAPE).setRedirectsEnabled(true).build();
+        RequestConfig config = RequestConfig.custom().setCookieSpec(StandardCookieSpec.RELAXED).setRedirectsEnabled(true).build();
         post.setConfig(config);
 
-        try (CloseableHttpResponse response = httpInterface.execute(post)) {
+        try (ClassicHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithRedirectContent(response, "oauth2 redirect response");
 
             URI redirect = httpInterface.getFinalLocation();
-            try (CloseableHttpResponse redirectResponse = httpInterface.execute(new HttpGet(redirect))) {
+            try (ClassicHttpResponse redirectResponse = httpInterface.execute(new HttpGet(redirect))) {
                 return exchangeOAuth2Token(httpInterface, redirectResponse);
             }
         }
     }
 
-    private String exchangeOAuth2Token(HttpInterface httpInterface, CloseableHttpResponse response) throws IOException {
-        for (Header header : response.getAllHeaders()) {
+    private String exchangeOAuth2Token(HttpInterface httpInterface, ClassicHttpResponse response) throws IOException {
+        for (Header header : response.getHeaders()) {
             if (header.getName().contains("Set-Cookie") && header.getValue().contains("oauth_token")) {
                 String oauthToken = DataFormatTools.extractBetween(header.toString(), "oauth_token=", ";");
 
@@ -355,11 +365,13 @@ public class YoutubeAccessTokenTracker {
                 params.add(new BasicNameValuePair("service", "ac2dm"));
                 HttpPost post = new HttpPost(buildUri(ANDROID_AUTH_URL, params));
 
-                try (CloseableHttpResponse exchangeResponse = httpInterface.execute(post)) {
+                try (ClassicHttpResponse exchangeResponse = httpInterface.execute(post)) {
                     HttpClientTools.assertSuccessWithContent(exchangeResponse, "exchange oauth2 token response");
 
                     Map<String, String> map = convertToMapLayout(EntityUtils.toString(exchangeResponse.getEntity()));
                     return map.get("Token");
+                } catch (ParseException e) {
+                    throw new IOException(e);
                 }
             }
         }
@@ -373,7 +385,7 @@ public class YoutubeAccessTokenTracker {
         HttpGet get = new HttpGet(YOUTUBE_ORIGIN + "/tv");
         get.setHeader("User-Agent", "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version");
 
-        try (CloseableHttpResponse response = httpInterface.execute(get)) {
+        try (ClassicHttpResponse response = httpInterface.execute(get)) {
             HttpClientTools.assertSuccessWithContent(response, "youtube tv page response");
 
             String responseText = EntityUtils.toString(response.getEntity());
@@ -384,11 +396,13 @@ public class YoutubeAccessTokenTracker {
             }
 
             return extractIdentity(httpInterface, authScript.group(1));
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
     private CachedAuthScript extractIdentity(HttpInterface httpInterface, String scriptUrl) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(YOUTUBE_ORIGIN + scriptUrl))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(YOUTUBE_ORIGIN + scriptUrl))) {
             HttpClientTools.assertSuccessWithContent(response, "tv script response");
 
             String responseText = EntityUtils.toString(response.getEntity());
@@ -399,14 +413,16 @@ public class YoutubeAccessTokenTracker {
             }
 
             return cachedAuthScript = new CachedAuthScript(identity.group(1), identity.group(2));
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
     private String requestAuthCode(HttpInterface httpInterface, CachedAuthScript script) throws IOException {
         HttpPost post = new HttpPost(TV_AUTH_CODE_URL);
-        post.setEntity(new StringEntity(String.format(TV_AUTH_CODE_PAYLOAD, script.clientId, UUID.randomUUID()), "UTF-8"));
+        post.setEntity(new StringEntity(String.format(TV_AUTH_CODE_PAYLOAD, script.clientId, UUID.randomUUID()), ContentType.APPLICATION_JSON));
 
-        try (CloseableHttpResponse response = httpInterface.execute(post)) {
+        try (ClassicHttpResponse response = httpInterface.execute(post)) {
             HttpClientTools.assertSuccessWithContent(response, "auth code response");
 
             String responseText = EntityUtils.toString(response.getEntity(), UTF_8);
@@ -415,6 +431,8 @@ public class YoutubeAccessTokenTracker {
             return waitForAuth(httpInterface, responseJson, script);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
@@ -432,9 +450,9 @@ public class YoutubeAccessTokenTracker {
             script.clientId,
             script.clientSecret,
             json.get("device_code").text()
-        ), "UTF-8"));
+        ), ContentType.APPLICATION_JSON));
 
-        try (CloseableHttpResponse authResponse = httpInterface.execute(authPost)) {
+        try (ClassicHttpResponse authResponse = httpInterface.execute(authPost)) {
             HttpClientTools.assertSuccessWithContent(authResponse, "auth wait response");
 
             String responseText = EntityUtils.toString(authResponse.getEntity(), UTF_8);
@@ -462,9 +480,9 @@ public class YoutubeAccessTokenTracker {
                     email,
                     password,
                     refreshToken
-                ), "UTF-8"));
+                ), ContentType.APPLICATION_JSON));
 
-                try (CloseableHttpResponse saveResponse = httpInterface.execute(savePost)) {
+                try (ClassicHttpResponse saveResponse = httpInterface.execute(savePost)) {
                     HttpClientTools.assertSuccessWithContent(saveResponse, "auth save response");
 
                     accessToken = responseJson.get("access_token").text();
@@ -478,6 +496,8 @@ public class YoutubeAccessTokenTracker {
                     return refreshToken;
                 }
             }
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 

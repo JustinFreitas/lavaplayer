@@ -2,7 +2,7 @@ package com.sedmelluq.discord.lavaplayer.source.youtube.format;
 
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeTrackFormat;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeTrackJsonData;
-import org.apache.http.entity.ContentType;
+import org.apache.hc.core5.http.ContentType;
 
 import java.util.ArrayList;
 import java.util.Collections;

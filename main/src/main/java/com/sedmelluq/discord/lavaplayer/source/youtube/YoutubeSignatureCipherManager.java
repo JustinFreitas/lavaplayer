@@ -4,9 +4,9 @@ import com.sedmelluq.discord.lavaplayer.tools.DataFormatTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.net.URIBuilder;
 import org.mozilla.javascript.engine.RhinoScriptEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,7 +161,7 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
             synchronized (cipherLoadLock) {
                 log.debug("Parsing player script {}", cipherScriptUrl);
 
-                try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(parseTokenScriptUrl(cipherScriptUrl)))) {
+                try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(parseTokenScriptUrl(cipherScriptUrl)))) {
                     validateResponseCode(cipherScriptUrl, response);
 
                     cipherKey = extractFromScript(IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8), cipherScriptUrl);
@@ -173,8 +173,8 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
         return cipherKey;
     }
 
-    private void validateResponseCode(String cipherScriptUrl, CloseableHttpResponse response) throws IOException {
-        int statusCode = response.getStatusLine().getStatusCode();
+    private void validateResponseCode(String cipherScriptUrl, ClassicHttpResponse response) throws IOException {
+        int statusCode = response.getCode();
 
         if (!HttpClientTools.isSuccessWithContent(statusCode)) {
             throw new IOException("Received non-success response code " + statusCode + " from script url " +
@@ -297,3 +297,4 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
         }
     }
 }
+

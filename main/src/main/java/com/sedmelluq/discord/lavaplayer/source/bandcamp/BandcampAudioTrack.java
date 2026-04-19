@@ -11,8 +11,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.DelegatedAudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +53,8 @@ public class BandcampAudioTrack extends DelegatedAudioTrack {
     }
 
     private String getTrackMediaUrl(HttpInterface httpInterface) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(trackInfo.identifier))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(trackInfo.identifier))) {
+            int statusCode = response.getCode();
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new IOException("Invalid status code for track page: " + statusCode);
             }

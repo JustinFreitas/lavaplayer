@@ -1,8 +1,8 @@
 package com.sedmelluq.discord.lavaplayer.source.youtube;
 
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.net.URIBuilder;
 
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -167,3 +167,4 @@ public class DefaultYoutubeLinkRouter implements YoutubeLinkRouter {
         <T> T extract(Routes<T> routes, String url);
     }
 }
+
