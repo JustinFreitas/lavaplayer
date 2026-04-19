@@ -5,10 +5,10 @@ slf4j = "2.0.17"
 commons-io = "2.21.0"
 # https://mvnrepository.com/artifact/org.jetbrains/annotations
 intellij-annotations = "26.1.0"
-# https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-jackson = "2.21.2"
-# https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
-httpclient = "4.5.14"
+# https://mvnrepository.com/artifact/tools.jackson.core/jackson-core
+jackson = "3.0.0"
+# https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5
+httpclient = "5.4"
 # https://mvnrepository.com/artifact/org.jsoup/jsoup
 jsoup = "1.22.1"
 # https://mvnrepository.com/artifact/net.iharder/base64
@@ -50,9 +50,9 @@ fdk-aac = "2.0.3"
 slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 commons-io = { group = "commons-io", name = "commons-io", version.ref = "commons-io" }
 intellij-annotations = { group = "org.jetbrains", name = "annotations", version.ref = "intellij-annotations" }
-jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jackson" }
-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
-httpclient = { group = "org.apache.httpcomponents", name = "httpclient", version.ref = "httpclient" }
+jackson-core = { group = "tools.jackson.core", name = "jackson-core", version.ref = "jackson" }
+jackson-databind = { group = "tools.jackson.core", name = "jackson-databind", version.ref = "jackson" }
+httpclient = { group = "org.apache.httpcomponents.client5", name = "httpclient5", version.ref = "httpclient" }
 commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "commons-codec" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 base64 = { group = "net.iharder", name = "base64", version.ref = "base64" }

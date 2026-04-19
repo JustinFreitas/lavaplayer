@@ -5,12 +5,13 @@ import com.sedmelluq.discord.lavaplayer.source.stream.M3uStreamSegmentUrlProvide
 import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import static com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools.fetchResponseLines;
@@ -43,14 +44,18 @@ public class BeamSegmentUrlProvider extends M3uStreamSegmentUrlProvider {
             return streamSegmentPlaylistUrl;
         }
 
-        HttpUriRequest jsonRequest = new HttpGet("https://mixer.com/api/v1/channels/" + channelId + "/manifest.light2");
+        ClassicHttpRequest jsonRequest = new HttpGet("https://mixer.com/api/v1/channels/" + channelId + "/manifest.light2");
         JsonBrowser lightManifest = HttpClientTools.fetchResponseAsJson(httpInterface, jsonRequest);
 
         if (lightManifest == null) {
-            throw new IllegalStateException("Did not find light manifest at " + jsonRequest.getURI());
+            try {
+                throw new IllegalStateException("Did not find light manifest at " + jsonRequest.getUri());
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        HttpUriRequest manifestRequest = new HttpGet("https://mixer.com" + lightManifest.get("hlsSrc").text());
+        ClassicHttpRequest manifestRequest = new HttpGet("https://mixer.com" + lightManifest.get("hlsSrc").text());
         List<ChannelStreamInfo> streams = loadChannelStreamsList(fetchResponseLines(httpInterface, manifestRequest,
             "mixer channel streams list"));
 
@@ -66,7 +71,8 @@ public class BeamSegmentUrlProvider extends M3uStreamSegmentUrlProvider {
     }
 
     @Override
-    protected HttpUriRequest createSegmentGetRequest(String url) {
+    protected ClassicHttpRequest createSegmentGetRequest(String url) {
         return new HttpGet(url);
     }
 }
+

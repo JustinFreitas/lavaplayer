@@ -5,9 +5,9 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.PersistentHttpStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ public final class HeartbeatingHttpStream extends PersistentHttpStream {
         request.addHeader("Origin", "https://www.nicovideo.jp");
         request.setEntity(new StringEntity(heartbeatPayload));
 
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
             HttpClientTools.assertSuccessWithContent(response, "heartbeat page");
 
             heartbeatPayload = JsonBrowser.parse(response.getEntity().getContent()).get("data").format();

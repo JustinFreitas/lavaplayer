@@ -12,13 +12,13 @@ import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -120,8 +120,8 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
     }
 
     private AudioItem loadFromTrackPage(HttpInterface httpInterface, String trackUrl) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(trackUrl))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(trackUrl))) {
+            int statusCode = response.getCode();
 
             if (statusCode == HttpStatus.SC_NOT_FOUND) {
                 return AudioReference.NO_TRACK;
@@ -178,18 +178,18 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
         // maybe we should consider using that instead? Need to figure out what the difference is, if any.
         builder.setParameter("fields", "config_url,name,uploader.name,duration,pictures");
 
-        HttpUriRequest request = new HttpGet(builder.build());
+        ClassicHttpRequest request = new HttpGet(builder.build());
         request.setHeader("Authorization", "jwt " + jwt);
         request.setHeader("Accept", "application/json");
 
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
             HttpClientTools.assertSuccessWithContent(response, "fetch video api");
             return JsonBrowser.parse(response.getEntity().getContent());
         }
     }
 
     public PlaybackFormat getPlaybackFormat(HttpInterface httpInterface, String configUrl) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(configUrl))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(configUrl))) {
             HttpClientTools.assertSuccessWithContent(response, "fetch playback formats");
 
             JsonBrowser json = JsonBrowser.parse(response.getEntity().getContent());
@@ -219,7 +219,7 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
     }
 
     private String getApiJwt(HttpInterface httpInterface) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("https://vimeo.com/_next/viewer"))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://vimeo.com/_next/viewer"))) {
             HttpClientTools.assertSuccessWithContent(response, "fetch jwt");
             JsonBrowser json = JsonBrowser.parse(response.getEntity().getContent());
             return json.get("jwt").text();
@@ -236,3 +236,5 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
         }
     }
 }
+
+

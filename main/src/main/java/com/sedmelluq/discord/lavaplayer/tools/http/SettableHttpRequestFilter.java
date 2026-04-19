@@ -1,8 +1,8 @@
 package com.sedmelluq.discord.lavaplayer.tools.http;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 
 public class SettableHttpRequestFilter implements HttpContextFilter {
     private HttpContextFilter filter;
@@ -34,7 +34,7 @@ public class SettableHttpRequestFilter implements HttpContextFilter {
     }
 
     @Override
-    public void onRequest(HttpClientContext context, HttpUriRequest request, boolean isRepetition) {
+    public void onRequest(HttpClientContext context, ClassicHttpRequest request, boolean isRepetition) {
         HttpContextFilter current = filter;
 
         if (current != null) {
@@ -43,7 +43,7 @@ public class SettableHttpRequestFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestResponse(HttpClientContext context, HttpUriRequest request, HttpResponse response) {
+    public boolean onRequestResponse(HttpClientContext context, ClassicHttpRequest request, HttpResponse response) {
         HttpContextFilter current = filter;
 
         if (current != null) {
@@ -54,7 +54,7 @@ public class SettableHttpRequestFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestException(HttpClientContext context, HttpUriRequest request, Throwable error) {
+    public boolean onRequestException(HttpClientContext context, ClassicHttpRequest request, Throwable error) {
         HttpContextFilter current = filter;
 
         if (current != null) {
@@ -64,3 +64,4 @@ public class SettableHttpRequestFilter implements HttpContextFilter {
         }
     }
 }
+

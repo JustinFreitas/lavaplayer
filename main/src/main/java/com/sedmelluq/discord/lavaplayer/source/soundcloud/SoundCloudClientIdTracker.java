@@ -3,10 +3,11 @@ package com.sedmelluq.discord.lavaplayer.source.soundcloud;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,8 +83,8 @@ public class SoundCloudClientIdTracker {
     }
 
     private String findApplicationScriptUrl(HttpInterface httpInterface) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("https://soundcloud.com"))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://soundcloud.com"))) {
+            int statusCode = response.getCode();
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new IOException("Invalid status code for main page response: " + statusCode);
             }
@@ -97,6 +98,8 @@ public class SoundCloudClientIdTracker {
             } else {
                 throw new IllegalStateException("Could not find application script from main page.");
             }
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 
@@ -108,8 +111,8 @@ public class SoundCloudClientIdTracker {
     }
 
     private String findClientIdFromApplicationScript(HttpInterface httpInterface, String scriptUrl) throws IOException {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(scriptUrl))) {
-            int statusCode = response.getStatusLine().getStatusCode();
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(scriptUrl))) {
+            int statusCode = response.getCode();
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new IOException("Invalid status code for application script response: " + statusCode);
             }
@@ -122,6 +125,8 @@ public class SoundCloudClientIdTracker {
             } else {
                 throw new IllegalStateException("Could not find client ID from application script.");
             }
+        } catch (ParseException e) {
+            throw new IOException(e);
         }
     }
 }

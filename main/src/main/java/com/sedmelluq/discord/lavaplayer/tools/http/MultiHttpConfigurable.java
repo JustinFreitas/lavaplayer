@@ -1,7 +1,7 @@
 package com.sedmelluq.discord.lavaplayer.tools.http;
 
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 
 import java.util.Collection;
 import java.util.function.Consumer;

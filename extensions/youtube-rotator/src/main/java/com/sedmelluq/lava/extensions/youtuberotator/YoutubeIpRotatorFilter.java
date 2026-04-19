@@ -3,9 +3,9 @@ package com.sedmelluq.lava.extensions.youtuberotator;
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextFilter;
 import com.sedmelluq.lava.extensions.youtuberotator.planner.AbstractRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.RateLimitException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ public class YoutubeIpRotatorFilter implements HttpContextFilter {
     }
 
     @Override
-    public void onRequest(HttpClientContext context, HttpUriRequest request, boolean isRepetition) {
+    public void onRequest(HttpClientContext context, ClassicHttpRequest request, boolean isRepetition) {
         if (isRepetition) {
             setRetryCount(context, getRetryCount(context) + 1);
         } else {
@@ -61,8 +61,8 @@ public class YoutubeIpRotatorFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestResponse(HttpClientContext context, HttpUriRequest request, HttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
+    public boolean onRequestResponse(HttpClientContext context, ClassicHttpRequest request, HttpResponse response) {
+        int statusCode = response.getCode();
 
         if (isSearch) {
             if (statusCode == 429) {
@@ -89,7 +89,7 @@ public class YoutubeIpRotatorFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestException(HttpClientContext context, HttpUriRequest request, Throwable error) {
+    public boolean onRequestException(HttpClientContext context, ClassicHttpRequest request, Throwable error) {
         if (error instanceof BindException) {
             log.warn("Cannot assign requested address {}, marking address as failing and retry!",
                 routePlanner.getLastAddress(context));

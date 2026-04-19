@@ -7,8 +7,8 @@ import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,8 +44,8 @@ public class DefaultYandexMusicDirectUrlLoader extends AbstractYandexMusicApiLoa
     private DownloadInfo extractDownloadInfo(String storageUrl) throws IOException {
         try (HttpInterface httpInterface = httpInterfaceManager.getInterface()) {
             String responseText;
-            try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(storageUrl))) {
-                int statusCode = response.getStatusLine().getStatusCode();
+            try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(storageUrl))) {
+                int statusCode = response.getCode();
                 if (statusCode != 200) {
                     throw new IOException("Invalid status code for track storage info: " + statusCode);
                 }
@@ -71,3 +71,4 @@ public class DefaultYandexMusicDirectUrlLoader extends AbstractYandexMusicApiLoa
         String s;
     }
 }
+

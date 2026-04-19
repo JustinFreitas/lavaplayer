@@ -7,12 +7,12 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import com.sedmelluq.discord.lavaplayer.tools.io.PersistentHttpStream;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
-import org.apache.http.Header;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpHead;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 
 import java.io.IOException;
 import java.net.URI;
@@ -41,10 +41,10 @@ public class SoundCloudHelper {
     }
 
     public static AudioReference redirectMobileLink(HttpInterface httpInterface, AudioReference reference) {
-        try (CloseableHttpResponse response = httpInterface.execute(new HttpGet(reference.identifier))) {
+        try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(reference.identifier))) {
             HttpClientTools.assertSuccessWithContent(response, "mobile redirect response");
             HttpClientContext context = httpInterface.getContext();
-            List<URI> redirects = context.getRedirectLocations();
+            List<URI> redirects = context.getRedirectLocations() != null ? context.getRedirectLocations().getAll() : null;
             if (redirects != null && !redirects.isEmpty()) {
                 return new AudioReference(redirects.get(0).toString(), null);
             } else {
@@ -59,7 +59,7 @@ public class SoundCloudHelper {
     public static AudioReference resolveShortTrackUrl(HttpInterface httpInterface, AudioReference reference) {
         HttpHead request = new HttpHead(reference.identifier);
         request.setConfig(RequestConfig.custom().setRedirectsEnabled(false).build());
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
+        try (ClassicHttpResponse response = httpInterface.execute(request)) {
             Header header = response.getLastHeader("Location");
             if (header == null) {
                 throw new FriendlyException("Unable to resolve Soundcloud short URL", SUSPICIOUS,
@@ -71,3 +71,4 @@ public class SoundCloudHelper {
         }
     }
 }
+

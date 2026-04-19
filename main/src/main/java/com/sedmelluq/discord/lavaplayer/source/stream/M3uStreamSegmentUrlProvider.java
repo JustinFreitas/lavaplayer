@@ -5,10 +5,10 @@ import com.sedmelluq.discord.lavaplayer.tools.ExceptionTools;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +28,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools.fetchRes
  */
 public abstract class M3uStreamSegmentUrlProvider {
     private static final long SEGMENT_WAIT_STEP_MS = 200;
-    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setSocketTimeout(5000).setConnectionRequestTimeout(5000).setConnectTimeout(5000).build();
+    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setResponseTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(5000)).setConnectionRequestTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(5000)).setConnectTimeout(org.apache.hc.core5.util.Timeout.ofMilliseconds(5000)).build();
 
     protected String baseUrl;
     protected SegmentInfo lastSegment;
@@ -116,12 +116,12 @@ public abstract class M3uStreamSegmentUrlProvider {
             return null;
         }
 
-        CloseableHttpResponse response = null;
+        ClassicHttpResponse response = null;
         boolean success = false;
 
         try {
             response = httpInterface.execute(createSegmentGetRequest(url));
-            int statusCode = response.getStatusLine().getStatusCode();
+            int statusCode = response.getCode();
 
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new IOException("Invalid status code from segment data URL: " + statusCode);
@@ -138,7 +138,7 @@ public abstract class M3uStreamSegmentUrlProvider {
         }
     }
 
-    protected abstract HttpUriRequest createSegmentGetRequest(String url);
+    protected abstract ClassicHttpRequest createSegmentGetRequest(String url);
 
     protected boolean isAbsoluteUrl(String url) {
         try {
@@ -275,3 +275,6 @@ public abstract class M3uStreamSegmentUrlProvider {
         }
     }
 }
+
+
+

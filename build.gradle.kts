@@ -49,8 +49,9 @@ subprojects {
     apply<MavenPublishPlugin>()
 
     configure<JavaPluginExtension> {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        }
     }
 
     pluginManager.withPlugin("com.vanniktech.maven.publish.base") {

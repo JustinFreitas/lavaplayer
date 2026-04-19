@@ -2,12 +2,11 @@ package com.sedmelluq.discord.lavaplayer.source.soundcloud;
 
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextFilter;
 import com.sedmelluq.discord.lavaplayer.tools.http.HttpContextRetryCounter;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.net.URIBuilder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,7 +31,7 @@ public class SoundCloudHttpContextFilter implements HttpContextFilter {
     }
 
     @Override
-    public void onRequest(HttpClientContext context, HttpUriRequest request, boolean isRepetition) {
+    public void onRequest(HttpClientContext context, ClassicHttpRequest request, boolean isRepetition) {
         request.setHeader("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/76.0.3809.100 Safari/537.36");
 
@@ -41,31 +40,29 @@ public class SoundCloudHttpContextFilter implements HttpContextFilter {
         if (clientIdTracker.isIdFetchContext(context)) {
             // Used for fetching client ID, let's not recurse.
             return;
-        } else if (request.getURI().getHost().contains("sndcdn.com")) {
-            // CDN urls do not require client ID (it actually breaks them)
-            return;
         }
 
         try {
-            URI uri = new URIBuilder(request.getURI())
+            if (request.getUri().getHost().contains("sndcdn.com")) {
+                // CDN urls do not require client ID (it actually breaks them)
+                return;
+            }
+
+            URI uri = new URIBuilder(request.getUri())
                 .setParameter("client_id", clientIdTracker.getClientId())
                 .build();
 
-            if (request instanceof HttpRequestBase) {
-                ((HttpRequestBase) request).setURI(uri);
-            } else {
-                throw new IllegalStateException("Cannot update request URI.");
-            }
+            request.setUri(uri);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean onRequestResponse(HttpClientContext context, HttpUriRequest request, HttpResponse response) {
+    public boolean onRequestResponse(HttpClientContext context, ClassicHttpRequest request, HttpResponse response) {
         if (clientIdTracker.isIdFetchContext(context) || retryCounter.getRetryCount(context) >= 1) {
             return false;
-        } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+        } else if (response.getCode() == HttpStatus.SC_UNAUTHORIZED) {
             clientIdTracker.updateClientId();
             return true;
         } else {
@@ -74,7 +71,7 @@ public class SoundCloudHttpContextFilter implements HttpContextFilter {
     }
 
     @Override
-    public boolean onRequestException(HttpClientContext context, HttpUriRequest request, Throwable error) {
+    public boolean onRequestException(HttpClientContext context, ClassicHttpRequest request, Throwable error) {
         return false;
     }
 }

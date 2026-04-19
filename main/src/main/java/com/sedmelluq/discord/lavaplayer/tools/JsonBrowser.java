@@ -1,12 +1,14 @@
 package com.sedmelluq.discord.lavaplayer.tools;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -158,7 +160,7 @@ public class JsonBrowser {
         List<JsonBrowser> values = new ArrayList<>();
 
         if (node != null) {
-            node.elements().forEachRemaining(child -> values.add(new JsonBrowser(child)));
+            node.values().forEach(child -> values.add(new JsonBrowser(child)));
         }
 
         return values;
@@ -173,9 +175,7 @@ public class JsonBrowser {
             return Collections.emptyList();
         }
 
-        List<String> keys = new ArrayList<>();
-        node.fieldNames().forEachRemaining(keys::add);
-        return keys;
+        return new ArrayList<>(node.propertyNames());
     }
 
     /**
@@ -328,10 +328,10 @@ public class JsonBrowser {
     }
 
     private static ObjectMapper setupMapper() {
-        JsonFactory jsonFactory = new JsonFactory();
-        jsonFactory.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        jsonFactory.enable(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES);
-        return new ObjectMapper(jsonFactory);
+        return JsonMapper.builder(new JsonFactory())
+            .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+            .enable(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES)
+            .build();
     }
 
     private static JsonBrowser create(JsonNode node) {

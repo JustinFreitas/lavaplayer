@@ -1,15 +1,23 @@
 package com.sedmelluq.discord.lavaplayer.tools.http;
 
-import org.apache.http.HttpHost;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.config.Lookup;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.*;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
-import org.apache.http.impl.conn.DefaultSchemePortResolver;
-import org.apache.http.impl.conn.SystemDefaultDnsResolver;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.config.Lookup;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
+import org.apache.hc.client5.http.io.ManagedHttpClientConnection;
+import org.apache.hc.client5.http.DnsResolver;
+import org.apache.hc.client5.http.SchemePortResolver;
+import org.apache.hc.client5.http.UnsupportedSchemeException;
+import org.apache.hc.client5.http.ConnectTimeoutException;
+import org.apache.hc.client5.http.HttpHostConnectException;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
+import org.apache.hc.client5.http.impl.DefaultSchemePortResolver;
+import org.apache.hc.client5.http.SystemDefaultDnsResolver;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.util.TimeValue;
 
 import java.io.IOException;
 import java.net.*;
@@ -46,7 +54,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         ManagedHttpClientConnection connection,
         HttpHost host,
         InetSocketAddress localAddress,
-        int connectTimeout,
+        TimeValue connectTimeout,
         SocketConfig socketConfig,
         HttpContext context
     ) throws IOException {
@@ -92,7 +100,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
 
     @Override
     public void upgrade(ManagedHttpClientConnection connection, HttpHost host, HttpContext context) throws IOException {
-        ConnectionSocketFactory socketFactory = getSocketFactory(host, HttpClientContext.adapt(context));
+        ConnectionSocketFactory socketFactory = getSocketFactory(host, context);
 
         if (!(socketFactory instanceof LayeredConnectionSocketFactory)) {
             throw new UnsupportedSchemeException(host.getSchemeName() +
@@ -132,7 +140,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         SocketConfig socketConfig,
         HttpHost host,
         InetSocketAddress localAddress,
-        int connectTimeout,
+        TimeValue connectTimeout,
         ManagedHttpClientConnection connection,
         InetSocketAddress remoteAddress,
         InetAddress[] addresses,
@@ -147,14 +155,14 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
             return true;
         } catch (final SocketTimeoutException ex) {
             if (last) {
-                throw new ConnectTimeoutException(ex, host, addresses);
+                throw new ConnectTimeoutException("Connect to " + host + " timed out", host);
             }
         } catch (final ConnectException ex) {
             if (last) {
                 final String msg = ex.getMessage();
                 throw "Connection timed out".equals(msg)
-                    ? new ConnectTimeoutException(ex, host, addresses)
-                    : new HttpHostConnectException(ex, host, addresses);
+                    ? new ConnectTimeoutException(msg, host)
+                    : new HttpHostConnectException(msg, host);
             }
         } catch (final NoRouteToHostException ex) {
             if (last) {
@@ -187,7 +195,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
     }
 
     private void configureSocket(Socket socket, SocketConfig socketConfig) throws IOException {
-        socket.setSoTimeout(socketConfig.getSoTimeout());
+        socket.setSoTimeout((int) socketConfig.getSoTimeout().toMilliseconds());
         socket.setReuseAddress(socketConfig.isSoReuseAddress());
         socket.setTcpNoDelay(socketConfig.isTcpNoDelay());
         socket.setKeepAlive(socketConfig.isSoKeepAlive());
@@ -200,8 +208,8 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
             socket.setSendBufferSize(socketConfig.getSndBufSize());
         }
 
-        if (socketConfig.getSoLinger() >= 0) {
-            socket.setSoLinger(true, socketConfig.getSoLinger());
+        if (socketConfig.getSoLinger() != null) {
+            socket.setSoLinger(true, (int) socketConfig.getSoLinger().toSeconds());
         }
     }
 
@@ -233,7 +241,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         HttpHost host,
         InetSocketAddress localAddress,
         InetSocketAddress remoteAddress,
-        int connectTimeout,
+        TimeValue connectTimeout,
         InetAddress[] addresses,
         int currentIndex
     ) {
@@ -306,3 +314,5 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         }
     }
 }
+
+

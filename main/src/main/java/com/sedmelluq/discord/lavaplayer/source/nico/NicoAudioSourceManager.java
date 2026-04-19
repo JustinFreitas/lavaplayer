@@ -12,14 +12,14 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import org.apache.http.Header;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicNameValuePair;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -85,8 +85,8 @@ public class NicoAudioSourceManager implements AudioSourceManager, HttpConfigura
 
     private AudioTrack loadTrack(String videoId) {
         try (HttpInterface httpInterface = getHttpInterface()) {
-            try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("http://ext.nicovideo.jp/api/getthumbinfo/" + videoId))) {
-                int statusCode = response.getStatusLine().getStatusCode();
+            try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("http://ext.nicovideo.jp/api/getthumbinfo/" + videoId))) {
+                int statusCode = response.getCode();
                 if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                     throw new IOException("Unexpected response code from video info: " + statusCode);
                 }
@@ -171,8 +171,8 @@ public class NicoAudioSourceManager implements AudioSourceManager, HttpConfigura
             ), StandardCharsets.UTF_8));
 
             try (HttpInterface httpInterface = getHttpInterface()) {
-                try (CloseableHttpResponse response = httpInterface.execute(loginRequest)) {
-                    int statusCode = response.getStatusLine().getStatusCode();
+                try (ClassicHttpResponse response = httpInterface.execute(loginRequest)) {
+                    int statusCode = response.getCode();
 
                     if (statusCode != 302) {
                         throw new IOException("Unexpected response code " + statusCode);

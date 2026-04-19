@@ -3,12 +3,12 @@ package com.sedmelluq.discord.lavaplayer.tools.io;
 import com.sedmelluq.discord.lavaplayer.tools.Units;
 import com.sedmelluq.discord.lavaplayer.track.info.AudioTrackInfoBuilder;
 import com.sedmelluq.discord.lavaplayer.track.info.AudioTrackInfoProvider;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
     protected final HttpInterface httpInterface;
     protected final URI contentUrl;
     private int lastStatusCode;
-    private CloseableHttpResponse currentResponse;
+    private ClassicHttpResponse currentResponse;
     protected InputStream currentContent;
     protected long position;
 
@@ -68,7 +68,7 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
     /**
      * @return An HTTP response if one is currently open.
      */
-    public HttpResponse getCurrentResponse() {
+    public ClassicHttpResponse getCurrentResponse() {
         return currentResponse;
     }
 
@@ -80,8 +80,8 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
         return true;
     }
 
-    private static boolean validateStatusCode(HttpResponse response, boolean returnOnServerError) {
-        int statusCode = response.getStatusLine().getStatusCode();
+    private static boolean validateStatusCode(ClassicHttpResponse response, boolean returnOnServerError) {
+        int statusCode = response.getCode();
         if (returnOnServerError && statusCode >= HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return false;
         } else if (!isSuccessWithContent(statusCode)) {
@@ -113,13 +113,13 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
     /**
      * @return An InputStream implementation for the current http stream.
      */
-    public InputStream createContentInputStream(HttpResponse response) throws IOException {
+    public InputStream createContentInputStream(ClassicHttpResponse response) throws IOException {
         return new BufferedInputStream(response.getEntity().getContent());
     }
 
     private boolean attemptConnect(boolean skipStatusCheck, boolean retryOnServerError) throws IOException {
         currentResponse = httpInterface.execute(getConnectRequest());
-        lastStatusCode = currentResponse.getStatusLine().getStatusCode();
+        lastStatusCode = currentResponse.getCode();
 
         if (!skipStatusCheck && !validateStatusCode(currentResponse, retryOnServerError)) {
             return false;

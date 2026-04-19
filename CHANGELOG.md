@@ -1,5 +1,11 @@
 # Change Log
 
+## [2.2.6_8] - 2026-04-18
+* Modernized codebase to Java 25 and Gradle 9.5.0-rc-3
+* Fully migrated to Apache HttpClient 5 (Classic API) with native HTTP/2 support
+* Upgraded to Jackson 3.0.0 GA and refactored `JsonBrowser` for the new API
+* Added `extensions/spring-boot-starter` for seamless Spring Boot 4 integration (v4.0.5)
+
 ## [2.2.6_7] - 2026-04-18
 * Updated `commons-codec` to `1.21.0`
 * Updated `junit-platform-launcher` to `6.0.3`

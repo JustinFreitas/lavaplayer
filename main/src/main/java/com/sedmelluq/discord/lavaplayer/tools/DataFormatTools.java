@@ -1,8 +1,8 @@
 package com.sedmelluq.discord.lavaplayer.tools;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.net.URLEncodedUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -211,3 +211,4 @@ public class DataFormatTools {
         }
     }
 }
+

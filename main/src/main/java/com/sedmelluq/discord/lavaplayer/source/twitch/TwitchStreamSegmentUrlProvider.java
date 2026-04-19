@@ -5,9 +5,9 @@ import com.sedmelluq.discord.lavaplayer.source.stream.M3uStreamSegmentUrlProvide
 import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +58,7 @@ public class TwitchStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider 
             tokenJson.get("data").get("streamPlaybackAccessToken").get("signature").text()
         );
         String url = getChannelStreamsUrl(token).toString();
-        HttpUriRequest request = new HttpGet(url);
+        ClassicHttpRequest request = new HttpGet(url);
         ChannelStreams streams = loadChannelStreamsInfo(HttpClientTools.fetchResponseLines(httpInterface, request, "channel streams list"));
 
         if (streams.entries.isEmpty()) {
@@ -77,7 +77,7 @@ public class TwitchStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider 
     }
 
     @Override
-    protected HttpUriRequest createSegmentGetRequest(String url) {
+    protected ClassicHttpRequest createSegmentGetRequest(String url) {
         return manager.createGetRequest(url);
     }
 
@@ -145,3 +145,5 @@ public class TwitchStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider 
         }
     }
 }
+
+
