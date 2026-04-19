@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.6_10] - 2026-04-18
+* Fixed `SO_LINGER` bug in `ExtendedConnectionOperator` where `-1` could be used, throwing an exception
+* Ensured complete removal of any remaining HttpClient 4 references (`HttpUriRequest`, etc.) across all source managers
+
 ## [2.2.6_9] - 2026-04-18
 * Fixed lingering HttpClient 4 references in HLS segment provider causing `NoClassDefFoundError`
 

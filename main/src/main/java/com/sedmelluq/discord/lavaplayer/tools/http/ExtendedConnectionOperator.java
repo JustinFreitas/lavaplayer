@@ -208,7 +208,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
             socket.setSendBufferSize(socketConfig.getSndBufSize());
         }
 
-        if (socketConfig.getSoLinger() != null) {
+        if (socketConfig.getSoLinger() != null && socketConfig.getSoLinger().toSeconds() >= 0) {
             socket.setSoLinger(true, (int) socketConfig.getSoLinger().toSeconds());
         }
     }
