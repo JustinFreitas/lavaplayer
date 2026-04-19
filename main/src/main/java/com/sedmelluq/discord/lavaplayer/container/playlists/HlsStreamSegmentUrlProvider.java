@@ -3,7 +3,7 @@ package com.sedmelluq.discord.lavaplayer.container.playlists;
 import com.sedmelluq.discord.lavaplayer.source.stream.M3uStreamSegmentUrlProvider;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +19,9 @@ public class HlsStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider {
     private final String streamListUrl;
     private volatile String segmentPlaylistUrl;
 
-    public HlsStreamSegmentUrlProvider(String streamListUrl, String segmentPlaylistUrl) {
-        super(streamListUrl);
+    public HlsStreamSegmentUrlProvider(String streamListUrl, String originUrl) {
+        super(originUrl);
         this.streamListUrl = streamListUrl;
-        this.segmentPlaylistUrl = segmentPlaylistUrl;
     }
 
     @Override
@@ -40,7 +39,7 @@ public class HlsStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider {
             return segmentPlaylistUrl;
         }
 
-        HttpUriRequest request = new HttpGet(streamListUrl);
+        ClassicHttpRequest request = new HttpGet(streamListUrl);
         String[] lines = fetchResponseLines(httpInterface, request, "HLS stream list");
 
         if (isSegmentPlaylist(lines)) {
@@ -61,7 +60,7 @@ public class HlsStreamSegmentUrlProvider extends M3uStreamSegmentUrlProvider {
     }
 
     @Override
-    protected HttpUriRequest createSegmentGetRequest(String url) {
+    protected ClassicHttpRequest createSegmentGetRequest(String url) {
         return new HttpGet(url);
     }
 

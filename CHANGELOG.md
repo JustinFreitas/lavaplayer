@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.6_9] - 2026-04-18
+* Fixed lingering HttpClient 4 references in HLS segment provider causing `NoClassDefFoundError`
+
 ## [2.2.6_8] - 2026-04-18
 * Modernized codebase to Java 25 and Gradle 9.5.0-rc-3
 * Fully migrated to Apache HttpClient 5 (Classic API) with native HTTP/2 support
