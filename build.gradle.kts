@@ -35,7 +35,7 @@ allprojects {
 
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("commons-codec:commons-codec")).using(module("commons-codec:commons-codec:1.21.0"))
+            substitute(module("commons-codec:commons-codec")).using(module("commons-codec:commons-codec:1.22.0"))
         }
     }
 }
