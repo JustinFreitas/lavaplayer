@@ -1,5 +1,13 @@
 # Change Log
 
+## [2.2.6_12] - 2026-05-30
+* Updated various dependencies: SLF4J `2.0.18`, Jackson `3.1.4`, JSON `20260522`, Logback `1.5.33`, and JUnit Platform Launcher `6.1.0`
+* Documented ReplayGain support and Spring Boot Starter extension in `README.md`
+
+## [2.2.6_11] - 2026-05-07
+* Included updated Gradle wrapper scripts
+* Minor internal build optimizations
+
 ## [2.2.6_10] - 2026-04-18
 * Fixed `SO_LINGER` bug in `ExtendedConnectionOperator` where `-1` could be used, throwing an exception
 * Ensured complete removal of any remaining HttpClient 4 references (`HttpUriRequest`, etc.) across all source managers

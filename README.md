@@ -25,6 +25,13 @@ number: [![Maven Central](https://img.shields.io/maven-central/v/dev.arbjerg/lav
 Snapshots are published
 to https://maven.lavalink.dev/snapshots & https://s01.oss.sonatype.org/content/repositories/snapshots
 
+#### Extensions
+
+LavaPlayer also provides official extensions:
+
+* **Spring Boot Starter:** For seamless integration with Spring Boot applications.
+  * Artifact: **dev.arbjerg:lavaplayer-spring-boot-starter:x.y.z**
+
 Using in Gradle:
 
 ```gradle
@@ -127,6 +134,21 @@ custom sources using either some of the supported containers and codecs or defin
 actually executed, such as delegating it to another process, should the set of formats supported by LavaPlayer by
 default not be enough.
 
+#### ReplayGain support
+
+LavaPlayer supports ReplayGain for various container formats and codecs. When enabled, the player will automatically
+apply the track gain specified in the file's metadata to maintain a consistent perceived loudness across different
+tracks.
+
+Supported containers and tags include:
+* **MP3:** TXXX:REPLAYGAIN_TRACK_GAIN
+* **Ogg Opus:** R128_TRACK_GAIN and Output Gain (header)
+* **FLAC/Vorbis:** REPLAYGAIN_TRACK_GAIN
+* **Matroska/WebM:** REPLAYGAIN_TRACK_GAIN (Opus, Vorbis, AAC)
+* **MP4/M4A:** REPLAYGAIN_TRACK_GAIN (AAC)
+
+ReplayGain is disabled by default and can be enabled in the `AudioConfiguration`.
+
 ## Usage
 
 #### Creating an audio player manager
@@ -136,12 +158,17 @@ use the settings and sources you want. Here is a sample:
 
 ```java
 AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
+
+// Use the default configuration or modify it
+playerManager.getConfiguration().setReplayGainEnabled(true);
+
 AudioSourceManagers.registerRemoteSources(playerManager);
 ```
 
 There are various configuration settings that can be modified:
 
 * Opus encoding and resampling quality settings.
+* ReplayGain: automatically adjust volume based on track metadata.
 * Frame buffer duration: how much of audio is buffered in advance.
 * Stuck track threshold: when no data from a playing track comes in the specified time, an event is sent.
 * Abandoned player cleanup threshold: when the player is not queried in the specified amount of time, it is stopped.
