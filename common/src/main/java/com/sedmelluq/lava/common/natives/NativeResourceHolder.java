@@ -45,6 +45,7 @@ public abstract class NativeResourceHolder {
     }
 
     @Override
+    @SuppressWarnings({"deprecation", "removal"})
     protected void finalize() throws Throwable {
         super.finalize();
         closeInternal(true);
