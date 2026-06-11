@@ -12,7 +12,7 @@ output is required.
 > **Please read the [FAQ](FAQ.md) in case of issues.**
 
 > [!NOTE]
-> This fork requires Java 11 or newer. If you need Java 8 support you should update as java 8 was released 10 years ago.
+> This fork requires Java 25 or newer.
 
 #### Maven package
 
