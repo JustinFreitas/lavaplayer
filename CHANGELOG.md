@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.6_16] - 2026-06-25
+* Fixed the native build toolchain (CMake 4, Visual Studio 2022, newer automake) and added a CI matrix workflow that builds the connector from source on Windows, Linux, and macOS
+* Rebuilt the `win-x86-64`, `linux-x86-64`, and `darwin` native connectors from source; `darwin` is now arm64-only (previously a universal x86_64+arm64 build)
+
 ## [2.2.6_15] - 2026-06-24
 * Updated Logback to `1.5.35` and the Gradle Maven Publish plugin to `0.37.0`
 * Reconciled native codec versions with real upstream releases: libvorbis `1.3.7`, libogg `1.3.6`, and mpg123 `1.33.6`; reverted Opus to `1.3.1` (later releases drop the Visual Studio solution the native build depends on)
