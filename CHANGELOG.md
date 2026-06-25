@@ -1,5 +1,16 @@
 # Change Log
 
+## [2.2.6_15] - 2026-06-24
+* Updated Logback to `1.5.35` and the Gradle Maven Publish plugin to `0.37.0`
+* Reconciled native codec versions with real upstream releases: libvorbis `1.3.7`, libogg `1.3.6`, and mpg123 `1.33.6`; reverted Opus to `1.3.1` (later releases drop the Visual Studio solution the native build depends on)
+
+## [2.2.6_14] - 2026-06-17
+* Bumped Spring Boot to `4.1.0` (autoconfigure and configuration processor) and Jackson to `3.2.0`
+* Updated Logback to `1.5.34` and Gradle wrapper to `9.5.1`
+* Updated GitHub Actions `gradle/actions/setup-gradle` to `v4`
+* Suppressed `finalize()` deprecation warning in `NativeResourceHolder`
+* Corrected `README.md` to state the fork requires Java 25 or newer
+
 ## [2.2.6_12] - 2026-05-30
 * Updated various dependencies: SLF4J `2.0.18`, Jackson `3.1.4`, JSON `20260522`, Logback `1.5.33`, and JUnit Platform Launcher `6.1.0`
 * Documented ReplayGain support and Spring Boot Starter extension in `README.md`
