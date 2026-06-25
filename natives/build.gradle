@@ -249,6 +249,11 @@ def buildOpusOnLinux(force) {
     def present = file("${projectDir}/libs/64/libopus.a").exists()
 
     if (force || !present) {
+        // opus 1.3.1 ships autotools generated with automake 1.15; rewrite the
+        // stamped version so `make` does not try to re-run the missing
+        // aclocal-1.15 on hosts with a newer automake (as mpg123 already does).
+        replaceAutotoolsVersion("$projectDir/opus/opus-${opusVersion}", '1.15')
+
         def flags = "-fPIC -O3 -fdata-sections -ffunction-sections"
         def process = ["./configure", "--enable-static", "--with-cpu=x64-64", "--with-pic", "CFLAGS=${flags}", "CXXFLAGS=${flags}", "LDFLAGS=${flags}"].
             execute(null as String[], file("$projectDir/opus/opus-${opusVersion}"))

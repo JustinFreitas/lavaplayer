@@ -59,6 +59,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake build-essential automake autoconf libtool
 
+      # macOS runners ship CMake but not the autotools the opus/ogg/mpg123
+      # source builds invoke.
+      - name: Install build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install automake autoconf libtool
+
       - name: Build natives
         # The bundled CMakeLists declare cmake_minimum_required(VERSION 3.15);
         # CMAKE_POLICY_VERSION_MINIMUM keeps CMake 4 runners from rejecting any
