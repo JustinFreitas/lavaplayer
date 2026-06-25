@@ -4,8 +4,6 @@ plugins {
 
 import org.apache.tools.ant.taskdefs.condition.Os
 
-import java.util.regex.Pattern
-
 apply from: 'natives.gradle'
 
 // https://ftp.osuosl.org/pub/xiph/releases/opus/
@@ -41,6 +39,13 @@ tasks.register('load') {
                 from "$unpackPath/libsamplerate-${sampleRateVersion}/src"
                 into "$projectDir/samplerate/src"
             }
+
+            // libsamplerate 0.2.x ships the public header under include/ rather
+            // than src/; place it alongside the sources so the build finds it.
+            copy {
+                from "$unpackPath/libsamplerate-${sampleRateVersion}/include"
+                into "$projectDir/samplerate/src"
+            }
         }
 
         if (!file("$projectDir/fdk-aac/libAACdec").exists()) {
@@ -57,9 +62,13 @@ tasks.register('load') {
                 into unpackPath
             }
 
+            // Copy the upstream sources but keep our custom CMakeLists.txt, which
+            // builds fdk-aac as a static /MT library consistent with the other
+            // codecs (the upstream CMakeLists defaults to a shared DLL build).
             copy {
                 from "$unpackPath/fdk-aac-${fdkAacVersion}"
                 into "$projectDir/fdk-aac"
+                exclude "CMakeLists.txt"
             }
         }
 
@@ -117,34 +126,29 @@ tasks.register('load') {
     }
 }
 
-ext.devEnvPath = null
+ext.msBuildPath = null
 
-def getDevEnvLocation() {
-    if (ext.devEnvPath == null) {
-        def testDirectory = file("${layout.buildDirectory.get()}/tmp/vsloc")
-        testDirectory.deleteDir()
-        testDirectory.mkdirs()
-
-        new File(testDirectory, "CMakeLists.txt") << ""
+def getMsBuildLocation() {
+    if (ext.msBuildPath == null) {
+        def vswhere = new File(System.getenv("ProgramFiles(x86)"),
+            "Microsoft Visual Studio/Installer/vswhere.exe")
 
         def outStream = new StringBuilder()
-        def cmakeProcess = "cmake .".execute(null as String[], testDirectory)
-        cmakeProcess.consumeProcessOutput(outStream, outStream)
-        cmakeProcess.waitFor()
+        def errStream = new StringBuilder()
+        def process = [vswhere.absolutePath, "-latest", "-find",
+            "MSBuild/**/Bin/MSBuild.exe"].execute()
+        process.consumeProcessOutput(outStream, errStream)
+        process.waitFor()
 
-        def matcher = Pattern.compile("working C compiler: ([^\\n]*) -- works").matcher(outStream)
-        matcher.find()
-
-        def baseDirectory = file(matcher.group(1))
-
-        while (!new File(baseDirectory, 'Common7').directory && baseDirectory.parentFile?.directory) {
-            baseDirectory = baseDirectory.parentFile
+        def msbuild = outStream.toString().readLines().find { !it.trim().isEmpty() }?.trim()
+        if (msbuild == null || !new File(msbuild).exists()) {
+            throw new IllegalStateException("Could not locate MSBuild.exe via vswhere: $errStream")
         }
 
-        ext.devEnvPath = new File(baseDirectory, "Common7/IDE/devenv.exe").absolutePath
+        ext.msBuildPath = msbuild
     }
 
-    return ext.devEnvPath
+    return ext.msBuildPath
 }
 
 def buildOpusOnWindows(force) {
@@ -156,18 +160,81 @@ def buildOpusOnWindows(force) {
         file(base).deleteDir()
         file(base).mkdirs()
 
-        def devenv = getDevEnvLocation()
+        def msbuild = getMsBuildLocation()
         def platformName = "x64"
+        def vs2015Dir = file("$projectDir/opus/opus-${opusVersion}/win32/VS2015")
 
-        def process = [devenv, "opus.sln", "/Project", "opus", "/Build", "Release|${platformName}"].
-            execute(null as String[], file("$projectDir/opus/opus-${opusVersion}/win32/VS2015"))
+        // The bundled solution targets the v140 (VS2015) toolset; retarget to
+        // whatever toolset the locally installed Visual Studio ships so it
+        // builds without requiring the legacy v140 toolset to be installed.
+        def process = [msbuild, "opus.vcxproj",
+            "/p:Configuration=Release", "/p:Platform=${platformName}",
+            "/p:PlatformToolset=v143", "/p:WindowsTargetPlatformVersion=10.0",
+            "/t:Build", "/m"].execute(null as String[], vs2015Dir)
 
-        process.waitForProcessOutput(System.out as Appendable, System.err)
+        waitForAndCheckSuccess(process, "Opus MSBuild")
 
         libs.each {
-            assert file("$projectDir/opus/opus-${opusVersion}/win32/VS2015/${platformName}/Release/${it}.lib").renameTo("${base}/${it}.lib")
+            assert file("$vs2015Dir/${platformName}/Release/${it}.lib").renameTo("${base}/${it}.lib")
         }
     }
+}
+
+def findVcTool(name) {
+    def vswhere = new File(System.getenv("ProgramFiles(x86)"),
+        "Microsoft Visual Studio/Installer/vswhere.exe")
+
+    def outStream = new StringBuilder()
+    def errStream = new StringBuilder()
+    def process = [vswhere.absolutePath, "-latest", "-find",
+        "VC/Tools/MSVC/**/bin/Hostx64/x64/${name}"].execute()
+    process.consumeProcessOutput(outStream, errStream)
+    process.waitFor()
+
+    def tool = outStream.toString().readLines().find { !it.trim().isEmpty() }?.trim()
+    if (tool == null || !new File(tool).exists()) {
+        throw new IllegalStateException("Could not locate ${name} via vswhere: $errStream")
+    }
+
+    return tool
+}
+
+// mpg123 is shipped as a prebuilt DLL on Windows rather than compiled from
+// source; synthesize the import library the connector links against from that
+// DLL's export table so libs/64/mpg123.lib is always present for the link.
+def generateMpg123ImportLibOnWindows() {
+    def base = file("$projectDir/libs/64")
+    base.mkdirs()
+
+    def dll = file("${project(':natives-publish').projectDir}" +
+        "/src/main/resources/natives/win-x86-64/libmpg123-0.dll")
+    if (!dll.exists()) {
+        throw new IllegalStateException("Prebuilt mpg123 DLL not found: $dll")
+    }
+
+    def dumpbin = findVcTool("dumpbin.exe")
+    def lib = findVcTool("lib.exe")
+
+    def exports = new StringBuilder()
+    def dumpProcess = [dumpbin, "/exports", dll.absolutePath].execute()
+    dumpProcess.consumeProcessOutput(exports, new StringBuilder())
+    dumpProcess.waitFor()
+
+    def names = exports.toString().readLines().findResults { line ->
+        def matcher = line =~ /^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]{8}\s+(\S+)/
+        matcher ? matcher[0][1] : null
+    }
+    if (names.isEmpty()) {
+        throw new IllegalStateException("No exports found in $dll")
+    }
+
+    def defFile = new File(base, "mpg123.def")
+    defFile.text = (["EXPORTS"] + names).join(System.lineSeparator())
+
+    def libProcess = [lib, "/def:${defFile.absolutePath}", "/machine:x64",
+        "/name:libmpg123-0.dll", "/out:${new File(base, "mpg123.lib").absolutePath}"].
+        execute()
+    waitForAndCheckSuccess(libProcess, "mpg123 import lib")
 }
 
 static def waitForAndCheckSuccess(process, name) {
@@ -257,6 +324,7 @@ def prepareOggOnLinux(force) {
 def prepareBuilds(force) {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         buildOpusOnWindows(force)
+        generateMpg123ImportLibOnWindows()
     } else {
         prepareOggOnLinux(force)
         buildOpusOnLinux(force)
