@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.15)
 project(connector C)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -12,7 +12,7 @@ else()
 	set(SYSNAME "darwin")
 endif()
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if (MSVC)
 	add_definitions(-Dinline=__inline)
 
 	set(COMPILER_FLAGS "")
@@ -38,7 +38,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${COMPILER_FLAGS} ${COMPILER_FLAGS_RELEASE}")
 include_directories("$ENV{JAVA_HOME}/include/")
 
 include_directories("${samplerate_SOURCE_DIR}/src")
-include_directories("../opus/opus-1.3/include")
+include_directories("../opus/opus-1.3.1/include")
 include_directories("../fdk-aac/libAACdec/include")
 include_directories("../fdk-aac/libSYS/include")
 include_directories("../vorbis/libvorbis-1.3.7/include")
