@@ -245,26 +245,38 @@ static def waitForAndCheckSuccess(process, name) {
     }
 }
 
+// Override the autotools regeneration programs with no-ops so the pre-generated
+// files in a release tarball are never rebuilt. This avoids depending on the
+// exact aclocal/automake version the tarball was produced with, which the host
+// rarely matches (and which may not even be installed).
+def autotoolsNoOpOverrides() {
+    return ["ACLOCAL=true", "AUTOMAKE=true", "AUTOCONF=true",
+            "AUTOHEADER=true", "AUTORECONF=true", "MAKEINFO=true"]
+}
+
+// The x86-64 --with-cpu tuning forces x86 assembly, which does not assemble on
+// Apple Silicon; let configure autodetect the CPU there (arm64 macOS runners).
+def withCpuArgs(cpu) {
+    return Os.isFamily(Os.FAMILY_MAC) ? [] : ["--with-cpu=${cpu}".toString()]
+}
+
 def buildOpusOnLinux(force) {
     def present = file("${projectDir}/libs/64/libopus.a").exists()
 
     if (force || !present) {
-        // opus 1.3.1 ships pre-generated autotools output; refresh the file
-        // timestamps in dependency order so `make` treats them as up-to-date
-        // and does not try to regenerate them with the host's automake (whose
-        // version never matches the one the tarball was built with).
-        touchAutotoolsOutputs("$projectDir/opus/opus-${opusVersion}")
+        def opusDir = file("$projectDir/opus/opus-${opusVersion}")
+        def overrides = autotoolsNoOpOverrides()
 
         def flags = "-fPIC -O3 -fdata-sections -ffunction-sections"
-        def process = ["./configure", "--enable-static", "--with-cpu=x64-64", "--with-pic", "CFLAGS=${flags}", "CXXFLAGS=${flags}", "LDFLAGS=${flags}"].
-            execute(null as String[], file("$projectDir/opus/opus-${opusVersion}"))
+        def process = (["./configure", "--enable-static"] + withCpuArgs("x64-64") + ["--with-pic", "CFLAGS=${flags}", "CXXFLAGS=${flags}", "LDFLAGS=${flags}"] + overrides).
+            execute(null as String[], opusDir)
 
         waitForAndCheckSuccess(process, "Opus ./configure")
 
-        process = ["make", "clean"].execute(null as String[], file("$projectDir/opus/opus-${opusVersion}"))
+        process = (["make", "clean"] + overrides).execute(null as String[], opusDir)
         waitForAndCheckSuccess(process, "Opus make clean")
 
-        process = ["make"].execute(null as String[], file("$projectDir/opus/opus-${opusVersion}"))
+        process = (["make"] + overrides).execute(null as String[], opusDir)
         waitForAndCheckSuccess(process, "Opus make")
 
         copy {
@@ -274,43 +286,24 @@ def buildOpusOnLinux(force) {
     }
 }
 
-// Bump the mtimes of an autotools project's generated files in dependency
-// order (inputs first, outputs last) so GNU make's maintainer rules consider
-// them current and skip re-running aclocal/automake/autoconf during the build.
-static def touchAutotoolsOutputs(directory) {
-    def root = new File(directory.toString())
-    // Ordered oldest -> newest; later entries must end up strictly newer.
-    def ordered = ["configure.ac", "configure.in", "aclocal.m4", "configure",
-                   "config.h.in", "Makefile.am", "Makefile.in"]
-
-    long stamp = System.currentTimeMillis() - (ordered.size() * 2000L)
-    ordered.each { name ->
-        root.eachFileRecurse { file ->
-            if (file.name == name) {
-                file.setLastModified(stamp)
-            }
-        }
-        stamp += 2000L
-    }
-}
-
 
 def buildMpg123OnLinux(force) {
     def present = file("${projectDir}/libs/64/libmpg123.a").exists()
 
     if (force || !present) {
-        touchAutotoolsOutputs("$projectDir/mp3/mpg123-${mpg123Version}")
+        def mpgDir = file("$projectDir/mp3/mpg123-${mpg123Version}")
+        def overrides = autotoolsNoOpOverrides()
 
         def flags = "-fPIC -O3 -fdata-sections -ffunction-sections"
-        def process = ['./configure', '--enable-static', '--with-cpu=x86-64', '--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"].
-            execute(null as String[], file("$projectDir/mp3/mpg123-${mpg123Version}"))
+        def process = (['./configure', '--enable-static'] + withCpuArgs('x86-64') + ['--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"] + overrides).
+            execute(null as String[], mpgDir)
 
         waitForAndCheckSuccess(process, "Mpg123 ./configure")
 
-        process = ["make", "clean"].execute(null as String[], file("$projectDir/mp3/mpg123-${mpg123Version}"))
+        process = (["make", "clean"] + overrides).execute(null as String[], mpgDir)
         waitForAndCheckSuccess(process, "make clean")
 
-        process = ["make"].execute(null as String[], file("$projectDir/mp3/mpg123-${mpg123Version}"))
+        process = (["make"] + overrides).execute(null as String[], mpgDir)
         waitForAndCheckSuccess(process, "make")
 
         copy {
@@ -324,7 +317,8 @@ def prepareOggOnLinux(force) {
     def configured = file("$projectDir/vorbis/libogg-${oggVersion}/include/ogg/config_types.h").exists()
 
     if (force || !configured) {
-        def process = ["./configure", "--enable-static", "--build=x86_64-pc-linux-gnu", "--with-pic"].
+        def buildArgs = Os.isFamily(Os.FAMILY_MAC) ? [] : ["--build=x86_64-pc-linux-gnu"]
+        def process = (["./configure", "--enable-static"] + buildArgs + ["--with-pic"]).
             execute(null as String[], file("$projectDir/vorbis/libogg-${oggVersion}"))
 
         process.waitForProcessOutput(System.out as Appendable, System.err)
