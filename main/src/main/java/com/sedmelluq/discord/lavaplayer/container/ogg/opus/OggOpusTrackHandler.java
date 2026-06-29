@@ -133,6 +133,11 @@ public class OggOpusTrackHandler implements OggTrackHandler {
     }
 
     @Override
+    public Float getReplayGainDb() {
+        return volumeMultiplier != 1.0f ? (float) (20.0 * Math.log10(volumeMultiplier)) : null;
+    }
+
+    @Override
     public void seekToTimecode(long timecode) {
         try {
             opusPacketRouter.seekPerformed(timecode, packetInputStream.seek(timecode));

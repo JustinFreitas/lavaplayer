@@ -30,4 +30,12 @@ public interface OggTrackHandler extends Closeable {
      * @param timecode The timecode in milliseconds
      */
     void seekToTimecode(long timecode);
+
+    /**
+     * @return The gain in decibels applied to this track (ReplayGain/R128/header gain), or null if
+     *         none. Only meaningful after {@link #initialise} has been called.
+     */
+    default Float getReplayGainDb() {
+        return null;
+    }
 }

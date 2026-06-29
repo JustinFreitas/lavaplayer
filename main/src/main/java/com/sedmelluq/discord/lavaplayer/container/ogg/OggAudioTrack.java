@@ -20,6 +20,8 @@ public class OggAudioTrack extends BaseAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(OggAudioTrack.class);
 
     private final SeekableInputStream inputStream;
+    private volatile boolean replayGainApplied = false;
+    private volatile Float replayGainDb = null;
 
     /**
      * @param trackInfo   Track info
@@ -55,8 +57,25 @@ public class OggAudioTrack extends BaseAudioTrack {
     private void processTrackLoop(OggPacketInputStream packetInputStream, AudioProcessingContext context, OggTrackHandler handler, OggTrackBlueprint blueprint) throws IOException, InterruptedException {
         while (blueprint != null) {
             handler.initialise(context, 0, 0);
+
+            Float gainDb = handler.getReplayGainDb();
+            if (gainDb != null) {
+                this.replayGainApplied = true;
+                this.replayGainDb = gainDb;
+            }
+
             handler.provideFrames();
             blueprint = OggTrackLoader.loadTrackBlueprint(packetInputStream);
         }
+    }
+
+    @Override
+    public boolean isReplayGainApplied() {
+        return replayGainApplied;
+    }
+
+    @Override
+    public Float getReplayGainDb() {
+        return replayGainDb;
     }
 }
