@@ -85,4 +85,19 @@ public abstract class DelegatedAudioTrack extends BaseAudioTrack {
             }
         }
     }
+
+    @Override
+    public Float getReplayGainDb() {
+        if (delegate != null) {
+            return delegate.getReplayGainDb();
+        } else {
+            synchronized (this) {
+                if (delegate != null) {
+                    return delegate.getReplayGainDb();
+                } else {
+                    return super.getReplayGainDb();
+                }
+            }
+        }
+    }
 }

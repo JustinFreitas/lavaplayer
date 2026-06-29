@@ -116,4 +116,13 @@ public interface AudioTrack extends AudioItem {
     default boolean isReplayGainApplied() {
         return false;
     }
+
+    /**
+     * @return The ReplayGain adjustment in decibels that was detected and applied to this track,
+     *         or null if none was applied. Only known once the track has begun decoding.
+     */
+    @SuppressWarnings("unused")
+    default Float getReplayGainDb() {
+        return null;
+    }
 }

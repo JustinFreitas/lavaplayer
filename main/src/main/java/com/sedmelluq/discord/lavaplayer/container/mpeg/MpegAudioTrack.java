@@ -24,6 +24,7 @@ public class MpegAudioTrack extends BaseAudioTrack {
 
     private final SeekableInputStream inputStream;
     private volatile boolean replayGainApplied = false;
+    private volatile Float replayGainDb = null;
 
     /**
      * @param trackInfo   Track info
@@ -75,6 +76,7 @@ public class MpegAudioTrack extends BaseAudioTrack {
             trackConsumer.initialise();
             if (trackConsumer.isReplayGainApplied()) {
                 this.replayGainApplied = true;
+                this.replayGainDb = trackConsumer.getReplayGainDb();
             }
             success = true;
             return trackConsumer;
@@ -100,5 +102,11 @@ public class MpegAudioTrack extends BaseAudioTrack {
     @SuppressWarnings("unused")
     public boolean isReplayGainApplied() {
         return replayGainApplied;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public Float getReplayGainDb() {
+        return replayGainDb;
     }
 }

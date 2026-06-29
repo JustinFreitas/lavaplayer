@@ -15,6 +15,7 @@ public class FlacAudioTrack extends BaseAudioTrack {
 
     private final SeekableInputStream inputStream;
     private volatile boolean replayGainApplied = false;
+    private volatile Float replayGainDb = null;
 
     /**
      * @param trackInfo   Track info
@@ -33,6 +34,7 @@ public class FlacAudioTrack extends BaseAudioTrack {
 
         if (trackProvider.getVolumeMultiplier() != 1.0f) {
             this.replayGainApplied = true;
+            this.replayGainDb = (float) (20.0 * Math.log10(trackProvider.getVolumeMultiplier()));
         }
 
         try {
@@ -47,5 +49,11 @@ public class FlacAudioTrack extends BaseAudioTrack {
     @SuppressWarnings("unused")
     public boolean isReplayGainApplied() {
         return replayGainApplied;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public Float getReplayGainDb() {
+        return replayGainDb;
     }
 }

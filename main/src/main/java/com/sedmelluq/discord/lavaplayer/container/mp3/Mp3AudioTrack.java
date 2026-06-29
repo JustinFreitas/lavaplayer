@@ -15,6 +15,7 @@ public class Mp3AudioTrack extends BaseAudioTrack {
 
     private final SeekableInputStream inputStream;
     private volatile boolean replayGainApplied = false;
+    private volatile Float replayGainDb = null;
 
     /**
      * @param trackInfo   Track info
@@ -35,6 +36,7 @@ public class Mp3AudioTrack extends BaseAudioTrack {
 
             if (provider.getVolumeMultiplier() != 1.0f) {
                 this.replayGainApplied = true;
+                this.replayGainDb = (float) (20.0 * Math.log10(provider.getVolumeMultiplier()));
             }
 
             log.debug("Starting to play MP3 track {}", getIdentifier());
@@ -48,5 +50,11 @@ public class Mp3AudioTrack extends BaseAudioTrack {
     @SuppressWarnings("unused")
     public boolean isReplayGainApplied() {
         return replayGainApplied;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public Float getReplayGainDb() {
+        return replayGainDb;
     }
 }

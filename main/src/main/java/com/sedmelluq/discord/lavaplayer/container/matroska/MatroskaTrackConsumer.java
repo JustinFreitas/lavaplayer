@@ -53,4 +53,11 @@ public interface MatroskaTrackConsumer extends AutoCloseable {
     default boolean isReplayGainApplied() {
         return false;
     }
+
+    /**
+     * @return The ReplayGain adjustment in decibels applied to this track, or null if none.
+     */
+    default Float getReplayGainDb() {
+        return null;
+    }
 }
