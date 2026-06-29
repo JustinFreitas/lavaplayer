@@ -48,6 +48,12 @@ public class VimeoAudioTrack extends DelegatedAudioTrack {
     public void process(LocalAudioTrackExecutor localExecutor) throws Exception {
         try (HttpInterface httpInterface = sourceManager.getHttpInterface()) {
             JsonBrowser videoData = sourceManager.getVideoFromApi(httpInterface, trackInfo.identifier);
+
+            if (videoData == null) {
+                throw new FriendlyException("This Vimeo video is no longer available.", SUSPICIOUS,
+                    new IllegalStateException("Vimeo API returned 404 for video " + trackInfo.identifier));
+            }
+
             VimeoAudioSourceManager.PlaybackFormat playbackFormat = sourceManager.getPlaybackFormat(httpInterface, videoData.get("config_url").text());
 
             log.debug("Starting Vimeo track. HLS: {}, URL: {}", playbackFormat.isHls, playbackFormat.url);

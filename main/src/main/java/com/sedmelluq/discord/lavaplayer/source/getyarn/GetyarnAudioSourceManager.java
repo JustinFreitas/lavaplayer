@@ -16,6 +16,7 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -101,15 +102,30 @@ public class GetyarnAudioSourceManager implements HttpConfigurable, AudioSourceM
 
     private AudioTrack extractVideoUrlFromPage(AudioReference reference) {
         try (final ClassicHttpResponse response = getHttpInterface().execute(new HttpGet(reference.identifier))) {
+            final int statusCode = response.getCode();
             final String html = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
             final Document document = Jsoup.parse(html);
+
+            final Element videoMeta = document.selectFirst("meta[property=og:video:secure_url]");
+            final Element titleMeta = document.selectFirst("meta[property=og:title]");
+
+            if (videoMeta == null || titleMeta == null) {
+                // getyarn.io now sits behind a Cloudflare managed challenge, which returns a JS
+                // challenge page (typically HTTP 403) instead of the clip's Open Graph metadata.
+                // A plain HTTP client cannot solve that challenge, so the clip cannot be loaded.
+                throw new FriendlyException(
+                    "getyarn.io is currently blocking automated requests (Cloudflare), so this clip cannot be loaded.",
+                    SUSPICIOUS,
+                    new IllegalStateException("Expected og:video / og:title meta tags were missing (HTTP " + statusCode + ")")
+                );
+            }
 
             final AudioTrackInfo trackInfo = AudioTrackInfoBuilder.empty()
                 .setUri(reference.identifier)
                 .setAuthor("Unknown")
                 .setIsStream(false)
-                .setIdentifier(document.selectFirst("meta[property=og:video:secure_url]").attr("content"))
-                .setTitle(document.selectFirst("meta[property=og:title]").attr("content"))
+                .setIdentifier(videoMeta.attr("content"))
+                .setTitle(titleMeta.attr("content"))
                 .build();
 
             return createTrack(trackInfo);

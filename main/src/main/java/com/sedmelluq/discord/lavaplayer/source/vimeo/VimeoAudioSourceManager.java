@@ -153,8 +153,13 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
         ), this);
     }
 
-    private AudioTrack loadVideoFromApi(HttpInterface httpInterface, String videoId) throws IOException, URISyntaxException {
+    private AudioItem loadVideoFromApi(HttpInterface httpInterface, String videoId) throws IOException, URISyntaxException {
         JsonBrowser videoData = getVideoFromApi(httpInterface, videoId);
+
+        if (videoData == null) {
+            // Video does not exist, is private, or was deleted.
+            return AudioReference.NO_TRACK;
+        }
 
         AudioTrackInfo info = new AudioTrackInfo(
             videoData.get("name").text(),
@@ -183,6 +188,12 @@ public class VimeoAudioSourceManager implements AudioSourceManager, HttpConfigur
         request.setHeader("Accept", "application/json");
 
         try (ClassicHttpResponse response = httpInterface.execute(request)) {
+            // A deleted, private or non-existent video returns 404 here; signal "not found" to callers
+            // so it surfaces as a clean no-track result rather than a load failure.
+            if (response.getCode() == HttpStatus.SC_NOT_FOUND) {
+                return null;
+            }
+
             HttpClientTools.assertSuccessWithContent(response, "fetch video api");
             return JsonBrowser.parse(response.getEntity().getContent());
         }
