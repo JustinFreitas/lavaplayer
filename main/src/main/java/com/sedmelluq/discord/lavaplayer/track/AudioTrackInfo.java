@@ -36,6 +36,33 @@ public final class AudioTrackInfo {
      * International Standard Recording Code
      */
     public final String isrc;
+    /**
+     * ReplayGain adjustment in decibels
+     */
+    public final Float replayGainDb;
+
+    /**
+     * @param title      Track title
+     * @param author     Track author, if known
+     * @param length     Length of the track in milliseconds
+     * @param identifier Audio source specific track identifier
+     * @param isStream   True if this track is a stream
+     * @param uri        URL of the track or path to its file.
+     * @param artworkUrl Thumbnail of the track
+     * @param isrc       International Standard Recording Code
+     * @param replayGainDb ReplayGain adjustment in decibels
+     */
+    public AudioTrackInfo(String title, String author, long length, String identifier, boolean isStream, String uri, String artworkUrl, String isrc, Float replayGainDb) {
+        this.title = title;
+        this.author = author;
+        this.length = length;
+        this.identifier = identifier;
+        this.isStream = isStream;
+        this.uri = uri;
+        this.artworkUrl = artworkUrl;
+        this.isrc = isrc;
+        this.replayGainDb = replayGainDb;
+    }
 
     /**
      * @param title      Track title
@@ -48,14 +75,7 @@ public final class AudioTrackInfo {
      * @param isrc       International Standard Recording Code
      */
     public AudioTrackInfo(String title, String author, long length, String identifier, boolean isStream, String uri, String artworkUrl, String isrc) {
-        this.title = title;
-        this.author = author;
-        this.length = length;
-        this.identifier = identifier;
-        this.isStream = isStream;
-        this.uri = uri;
-        this.artworkUrl = artworkUrl;
-        this.isrc = isrc;
+        this(title, author, length, identifier, isStream, uri, artworkUrl, isrc, null);
     }
 
     /**

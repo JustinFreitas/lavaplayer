@@ -446,6 +446,31 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
         return getIdv3Tag(ISRC_TAG);
     }
 
+    @Override
+    public Float getReplayGainDb() {
+        if (replayGainTxxx != null) {
+            String normalized = replayGainTxxx.replace('\0', '=');
+            if (normalized.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
+                try {
+                    int tagIndex = normalized.toUpperCase().indexOf("REPLAYGAIN_TRACK_GAIN");
+                    if (tagIndex >= 0) {
+                        int dbIndex = normalized.indexOf("dB");
+                        if (dbIndex > 0) {
+                            String[] parts = normalized.split("=");
+                            if (parts.length >= 2) {
+                                String val = parts[1].replace("dB", "").trim();
+                                return Float.parseFloat(val);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse ReplayGain from TXXX: {}", replayGainTxxx);
+                }
+            }
+        }
+        return null;
+    }
+
     private record FrameHeader(String id, int size, int flags) {
 
         private boolean hasRawFormat() {

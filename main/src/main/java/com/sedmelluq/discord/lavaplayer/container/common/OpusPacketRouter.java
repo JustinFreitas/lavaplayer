@@ -186,16 +186,26 @@ public class OpusPacketRouter {
 
     public static void applyVolumeMultiplierToAllFramesInBuffer(int length, ShortBuffer frameBuffer,
             float volumeMultiplier) {
+        int originalPosition = frameBuffer.position();
+        
+        short[] localBuffer = new short[length];
+        frameBuffer.position(0);
+        frameBuffer.get(localBuffer, 0, length);
+
         for (int i = 0; i < length; i++) {
-            short sample = frameBuffer.get(i);
+            short sample = localBuffer[i];
             int newValue = (int) (sample * volumeMultiplier);
             if (newValue > Short.MAX_VALUE) {
                 newValue = Short.MAX_VALUE;
             } else if (newValue < Short.MIN_VALUE) {
                 newValue = Short.MIN_VALUE;
             }
-            frameBuffer.put(i, (short) newValue);
+            localBuffer[i] = (short) newValue;
         }
+
+        frameBuffer.position(0);
+        frameBuffer.put(localBuffer, 0, length);
+        frameBuffer.position(originalPosition);
     }
 
     private void passThrough(ByteBuffer buffer) throws InterruptedException {

@@ -114,7 +114,7 @@ public interface AudioTrack extends AudioItem {
      */
     @SuppressWarnings("unused")
     default boolean isReplayGainApplied() {
-        return false;
+        return getInfo() != null && getInfo().replayGainDb != null;
     }
 
     /**
@@ -123,6 +123,6 @@ public interface AudioTrack extends AudioItem {
      */
     @SuppressWarnings("unused")
     default Float getReplayGainDb() {
-        return null;
+        return getInfo() != null ? getInfo().replayGainDb : null;
     }
 }

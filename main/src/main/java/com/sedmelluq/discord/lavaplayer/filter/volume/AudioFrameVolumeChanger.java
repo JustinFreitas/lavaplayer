@@ -25,7 +25,6 @@ public class AudioFrameVolumeChanger implements AudioFrameRebuilder {
 
     private AudioChunkEncoder encoder;
     private AudioChunkDecoder decoder;
-    private int frameIndex;
 
     private AudioFrameVolumeChanger(AudioConfiguration configuration, AudioDataFormat format, int newVolume) {
         this.configuration = configuration;
@@ -49,9 +48,7 @@ public class AudioFrameVolumeChanger implements AudioFrameRebuilder {
 
         int targetVolume = newVolume;
 
-        if (++frameIndex < 50) {
-            targetVolume = (int) ((newVolume - frame.getVolume()) * (frameIndex / 50.0) + frame.getVolume());
-        }
+        // Removed 50-frame fade-in logic to allow instantaneous volume changes when starting the decoder
 
         // Volume 0 is stored in the frame with volume 100 buffer
         if (targetVolume != 0) {

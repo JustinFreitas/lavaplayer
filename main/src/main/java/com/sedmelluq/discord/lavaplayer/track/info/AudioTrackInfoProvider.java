@@ -32,4 +32,11 @@ public interface AudioTrackInfoProvider {
     String getArtworkUrl();
 
     String getISRC();
+
+    /**
+     * @return Track ReplayGain adjustment in decibels, or <code>null</code> if this provider does not know it.
+     */
+    default Float getReplayGainDb() {
+        return null;
+    }
 }

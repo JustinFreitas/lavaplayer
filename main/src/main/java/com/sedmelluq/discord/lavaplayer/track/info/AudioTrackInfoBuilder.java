@@ -22,6 +22,7 @@ public class AudioTrackInfoBuilder implements AudioTrackInfoProvider {
     private String artworkUrl;
     private Boolean isStream;
     private String isrc;
+    private Float replayGainDb;
 
     private AudioTrackInfoBuilder() {
 
@@ -60,6 +61,11 @@ public class AudioTrackInfoBuilder implements AudioTrackInfoProvider {
     @Override
     public String getISRC() {
         return isrc;
+    }
+
+    @Override
+    public Float getReplayGainDb() {
+        return replayGainDb;
     }
 
     public AudioTrackInfoBuilder setTitle(String value) {
@@ -102,6 +108,11 @@ public class AudioTrackInfoBuilder implements AudioTrackInfoProvider {
         return this;
     }
 
+    public AudioTrackInfoBuilder setReplayGainDb(Float value) {
+        replayGainDb = DataFormatTools.defaultOnNull(value, replayGainDb);
+        return this;
+    }
+
     /**
      * @param provider The track info provider to apply to the builder.
      * @return this
@@ -117,7 +128,8 @@ public class AudioTrackInfoBuilder implements AudioTrackInfoProvider {
             .setIdentifier(provider.getIdentifier())
             .setUri(provider.getUri())
             .setArtworkUrl(provider.getArtworkUrl())
-            .setISRC(provider.getISRC());
+            .setISRC(provider.getISRC())
+            .setReplayGainDb(provider.getReplayGainDb());
     }
 
     /**
@@ -134,7 +146,8 @@ public class AudioTrackInfoBuilder implements AudioTrackInfoProvider {
             DataFormatTools.defaultOnNull(isStream, finalLength == DURATION_MS_UNKNOWN),
             uri,
             artworkUrl,
-            isrc
+            isrc,
+            replayGainDb
         );
     }
 

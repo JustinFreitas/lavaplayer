@@ -45,11 +45,22 @@ public class FlacContainerProbe implements MediaContainerProbe {
 
         FlacTrackInfo fileInfo = new FlacFileLoader(inputStream).parseHeaders();
 
-        AudioTrackInfo trackInfo = AudioTrackInfoBuilder.create(reference, inputStream)
+        AudioTrackInfoBuilder builder = AudioTrackInfoBuilder.create(reference, inputStream)
             .setTitle(fileInfo.tags.get(TITLE_TAG))
             .setAuthor(fileInfo.tags.get(ARTIST_TAG))
-            .setLength(fileInfo.duration)
-            .build();
+            .setLength(fileInfo.duration);
+
+        String replayGainTag = fileInfo.tags.get("REPLAYGAIN_TRACK_GAIN");
+        if (replayGainTag != null) {
+            try {
+                String cleanValue = replayGainTag.replace("dB", "").trim();
+                builder.setReplayGainDb(Float.parseFloat(cleanValue));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
+            }
+        }
+
+        AudioTrackInfo trackInfo = builder.build();
 
         return supportedFormat(this, null, trackInfo);
     }
