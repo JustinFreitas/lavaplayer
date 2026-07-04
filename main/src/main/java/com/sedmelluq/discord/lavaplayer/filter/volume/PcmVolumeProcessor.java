@@ -63,20 +63,21 @@ public class PcmVolumeProcessor {
             return;
         }
 
-        int startPosition = buffer.position();
-        int length = buffer.limit() - startPosition;
-        
-        short[] localBuffer = new short[length];
-        buffer.get(localBuffer);
-
-        for (int i = 0; i < length; i++) {
-            int value = localBuffer[i] * integerMultiplier / 10000;
-            localBuffer[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
+        if (buffer.hasArray()) {
+            short[] array = buffer.array();
+            int offset = buffer.arrayOffset();
+            int end = offset + buffer.limit();
+            for (int i = offset + buffer.position(); i < end; i++) {
+                int value = array[i] * integerMultiplier / 10000;
+                array[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
+            }
+        } else {
+            int endOffset = buffer.limit();
+            for (int i = buffer.position(); i < endOffset; i++) {
+                int value = buffer.get(i) * integerMultiplier / 10000;
+                buffer.put(i, (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value)));
+            }
         }
-
-        buffer.position(startPosition);
-        buffer.put(localBuffer);
-        buffer.position(startPosition);
     }
 
     private void unapplyCurrentVolume(ShortBuffer buffer) {
@@ -84,19 +85,20 @@ public class PcmVolumeProcessor {
             return;
         }
 
-        int startPosition = buffer.position();
-        int length = buffer.limit() - startPosition;
-        
-        short[] localBuffer = new short[length];
-        buffer.get(localBuffer);
-
-        for (int i = 0; i < length; i++) {
-            int value = localBuffer[i] * 10000 / integerMultiplier;
-            localBuffer[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
+        if (buffer.hasArray()) {
+            short[] array = buffer.array();
+            int offset = buffer.arrayOffset();
+            int end = offset + buffer.limit();
+            for (int i = offset + buffer.position(); i < end; i++) {
+                int value = array[i] * 10000 / integerMultiplier;
+                array[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
+            }
+        } else {
+            int endOffset = buffer.limit();
+            for (int i = buffer.position(); i < endOffset; i++) {
+                int value = buffer.get(i) * 10000 / integerMultiplier;
+                buffer.put(i, (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value)));
+            }
         }
-
-        buffer.position(startPosition);
-        buffer.put(localBuffer);
-        buffer.position(startPosition);
     }
 }

@@ -110,11 +110,12 @@ public interface AudioTrack extends AudioItem {
     <T> T getUserData(Class<T> klass);
 
     /**
-     * @return True if ReplayGain was detected and applied to this track.
+     * @return True if a ReplayGain adjustment was detected and applied to this track.
+     *         Only known once the track has begun decoding.
      */
     @SuppressWarnings("unused")
     default boolean isReplayGainApplied() {
-        return getInfo() != null && getInfo().replayGainDb != null;
+        return false;
     }
 
     /**
@@ -123,6 +124,6 @@ public interface AudioTrack extends AudioItem {
      */
     @SuppressWarnings("unused")
     default Float getReplayGainDb() {
-        return getInfo() != null ? getInfo().replayGainDb : null;
+        return null;
     }
 }

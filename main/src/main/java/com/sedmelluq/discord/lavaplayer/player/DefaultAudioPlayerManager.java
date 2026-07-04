@@ -35,7 +35,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.
  */
 public final class DefaultAudioPlayerManager implements AudioPlayerManager {
     private static final int TRACK_INFO_VERSIONED = 1;
-    private static final int TRACK_INFO_VERSION = 3;
+    private static final int TRACK_INFO_VERSION = 4;
 
     private static final int DEFAULT_FRAME_BUFFER_DURATION = (int) TimeUnit.SECONDS.toMillis(5);
     private static final int DEFAULT_CLEANUP_THRESHOLD = (int) TimeUnit.MINUTES.toMillis(1);
@@ -232,6 +232,12 @@ public final class DefaultAudioPlayerManager implements AudioPlayerManager {
         DataFormatTools.writeNullableText(output, trackInfo.artworkUrl);
         DataFormatTools.writeNullableText(output, trackInfo.isrc);
 
+        boolean hasReplayGain = trackInfo.replayGainDb != null;
+        output.writeBoolean(hasReplayGain);
+        if (hasReplayGain) {
+            output.writeFloat(trackInfo.replayGainDb);
+        }
+
         encodeTrackDetails(track, output);
         output.writeLong(track.getPosition());
 
@@ -255,7 +261,8 @@ public final class DefaultAudioPlayerManager implements AudioPlayerManager {
             input.readBoolean(),
             version >= 2 ? DataFormatTools.readNullableText(input) : null,
             version >= 3 ? DataFormatTools.readNullableText(input) : null,
-            version >= 3 ? DataFormatTools.readNullableText(input) : null
+            version >= 3 ? DataFormatTools.readNullableText(input) : null,
+            version >= 4 ? (input.readBoolean() ? input.readFloat() : null) : null
         );
         AudioTrack track = decodeTrackDetails(trackInfo, input);
         long position = input.readLong();
