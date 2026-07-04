@@ -1,5 +1,15 @@
 # Change Log
 
+## [2.2.6_21] - 2026-07-04
+* Resolved a garbage collection regression in volume processing that caused heavy allocations in the real-time audio pipeline
+* Fixed ReplayGain serialization by updating the track info version to preserve ReplayGain metadata across track state restoration
+* Reverted `AudioTrack` default methods for ReplayGain to restore consistent contract behavior for tracks overriding them
+
+## [2.2.6_20] - 2026-07-03
+* Implemented ReplayGain extraction during track probing and applied volume optimizations
+* Exposed applied ReplayGain value via `AudioTrack.getReplayGainDb()`
+* Handled deleted/private videos in Vimeo source and handled Cloudflare blocking in Getyarn source
+
 ## [2.2.6_16] - 2026-06-25
 * Fixed the native build toolchain (CMake 4, Visual Studio 2022, newer automake) and added a CI matrix workflow that builds the connector from source on Windows, Linux, and macOS
 * Rebuilt the `win-x86-64`, `linux-x86-64`, and `darwin` native connectors from source; `darwin` is now arm64-only (previously a universal x86_64+arm64 build)
