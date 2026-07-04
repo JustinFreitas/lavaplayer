@@ -31,6 +31,12 @@ maven-publish-plugin = "0.37.0"
 commons-codec = "1.22.0"
 # https://github.com/ben-manes/gradle-versions-plugin
 ben-manes-versions = "0.54.0"
+# https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
+junit-platform = "6.1.0"
+# https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
+grgit = "5.3.3"
+# https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
+download = "5.7.0"
 
 # Natives
 # https://github.com/xiph/opus
@@ -62,8 +68,10 @@ rhino-engine = { group = "org.mozilla", name = "rhino-engine", version.ref = "rh
 groovy = { group = "org.apache.groovy", name = "groovy", version.ref = "groovy" }
 spock-core = { group = "org.spockframework", name = "spock-core", version.ref = "spock-core" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback-classic" }
-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "6.1.0" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform" }
 
 [plugins]
 maven-publish-base = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish-plugin" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+grgit = { id = "org.ajoberstar.grgit", version.ref = "grgit" }
+download = { id = "de.undercouch.download", version.ref = "download" }

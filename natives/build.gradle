@@ -1,5 +1,5 @@
 plugins {
-    id 'de.undercouch.download'
+    alias(libs.plugins.download)
 }
 
 import org.apache.tools.ant.taskdefs.condition.Os
