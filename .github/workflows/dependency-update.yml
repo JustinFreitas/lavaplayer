@@ -2,8 +2,8 @@ name: Dependency Autopilot
 
 on:
   schedule:
-    # Run every Sunday at midnight
-    - cron: '0 0 * * 0'
+    # Run every other day at midnight
+    - cron: '0 0 */2 * *'
   workflow_dispatch:
 
 permissions:
