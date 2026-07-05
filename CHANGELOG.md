@@ -1,5 +1,14 @@
 # Change Log
 
+## [2.2.6_22] - 2026-07-04
+* Resolved a critical race condition in `YoutubeSignatureCipherManager` by isolating the Rhino `ScriptEngine` into a `ThreadLocal` context
+* Fixed missing double-checked locking that caused a stampeding herd when evaluating un-cached YouTube cipher scripts
+* Bound the size of `cipherCache` to prevent unbounded memory leaks when YouTube rotates script URLs
+* Eliminated lock starvation in `YoutubeAccessTokenTracker` by splitting locks and making tokens volatile
+* Fixed an `InputStream` contract violation in `YoutubePersistentHttpStream` where returning `0` bytes instead of blocking or reconnecting could cause consumers to infinitely poll
+* Removed an unnecessary 400ms delay at the end of VOD MPEG streams and decoupled synchronous blocking from the `YoutubeMpegStreamAudioTrack` constructor
+* Patched a potential Server-Side Request Forgery (SSRF) vulnerability in `YoutubeAudioSourceManager`'s anonymous routing via `URLEncoder`
+
 ## [2.2.6_21] - 2026-07-04
 * Resolved a garbage collection regression in volume processing that caused heavy allocations in the real-time audio pipeline
 * Fixed ReplayGain serialization by updating the track info version to preserve ReplayGain metadata across track state restoration
