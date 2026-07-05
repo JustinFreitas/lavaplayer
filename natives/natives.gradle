@@ -29,7 +29,48 @@ static def getBuildParameters(base) {
 }
 
 def getHomeDirectory() {
-    return 'C:/Users/justi/.jdks/azul-25.0.2'
+    def dir = file(System.getProperty('java.home'))
+    def possiblePaths = [
+        dir.absolutePath,
+        dir.name == 'jre' ? dir.parentFile.absolutePath : dir.absolutePath,
+        System.getenv("JAVA_HOME")
+    ]
+    
+    for (String path : possiblePaths) {
+        if (path != null && file(path + "/include/jni.h").exists()) {
+            return file(path).absolutePath
+        }
+    }
+
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        def jdksDir = file(System.getProperty("user.home") + "/.jdks")
+        if (jdksDir.exists()) {
+            def azulJdks = jdksDir.listFiles().findAll { it.name.startsWith("azul-") && file(it.absolutePath + "/include/jni.h").exists() }
+            if (!azulJdks.isEmpty()) {
+                return azulJdks.sort { a, b -> b.name <=> a.name }[0].absolutePath
+            }
+        }
+    }
+    
+    return dir.name == 'jre' ? dir.parentFile.absolutePath : dir.absolutePath
+}
+
+def getCmakeExecutable() {
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        def vswhere = new File(System.getenv("ProgramFiles(x86)"), "Microsoft Visual Studio/Installer/vswhere.exe")
+        if (vswhere.exists()) {
+            def outStream = new StringBuilder()
+            def errStream = new StringBuilder()
+            def process = [vswhere.absolutePath, "-products", "*", "-latest", "-find", "**/CMake/CMake/bin/cmake.exe"].execute()
+            process.consumeProcessOutput(outStream, errStream)
+            process.waitFor()
+            def cmakePath = outStream.toString().readLines().find { !it.trim().isEmpty() }?.trim()
+            if (cmakePath != null && new File(cmakePath).exists()) {
+                return cmakePath
+            }
+        }
+    }
+    return 'cmake'
 }
 
 def createBuildTask(tasksHolder, config) {
@@ -55,22 +96,14 @@ def createBuildTask(tasksHolder, config) {
         }
 
         workingDir buildDirectory
-        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-            executable new File(System.getenv("ProgramFiles(x86)"), "Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe").absolutePath
-        } else {
-            executable 'cmake'
-        }
+        executable getCmakeExecutable()
         args(*(parameters.setupArguments + ['../..']))
         environment parameters.env
     }
 
     def buildTask = tasksHolder.create("${taskBase}-build", Exec) {
         workingDir buildDirectory
-        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-            executable new File(System.getenv("ProgramFiles(x86)"), "Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe").absolutePath
-        } else {
-            executable 'cmake'
-        }
+        executable getCmakeExecutable()
         args(*(['--build', '.'] + parameters.buildArguments))
         environment parameters.env
     }
