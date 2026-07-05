@@ -72,7 +72,7 @@ public class OggOpusTrackHandler implements OggTrackHandler {
         // I'll stick to isReplayGainEnabled for now for SAFETY, as requested by "Conventions" (mimic existing).
         // If ReplayGain is enabled, we include header gain.
         
-        opusPacketRouter = new OpusPacketRouter(context, sampleRate, channelCount);
+        opusPacketRouter = new OpusPacketRouter(context, 48000, channelCount);
         if (volumeMultiplier != 1.0f) {
             opusPacketRouter.setVolumeMultiplier(volumeMultiplier);
         }
