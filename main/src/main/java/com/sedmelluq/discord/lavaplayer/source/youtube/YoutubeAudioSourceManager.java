@@ -314,7 +314,8 @@ public class YoutubeAudioSourceManager implements AudioSourceManager, HttpConfig
         @Override
         public AudioItem anonymous(String videoIds) {
             try (HttpInterface httpInterface = getHttpInterface()) {
-                try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/watch_videos?video_ids=" + videoIds))) {
+                String encodedIds = java.net.URLEncoder.encode(videoIds, "UTF-8");
+                try (ClassicHttpResponse response = httpInterface.execute(new HttpGet("https://www.youtube.com/watch_videos?video_ids=" + encodedIds))) {
                     HttpClientTools.assertSuccessWithContent(response, "playlist response");
                     HttpClientContext context = httpInterface.getContext();
                     // youtube currently transforms watch_video links into a link with a video id and a list id.

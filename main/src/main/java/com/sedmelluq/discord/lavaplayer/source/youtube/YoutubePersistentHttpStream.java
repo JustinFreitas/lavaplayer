@@ -57,15 +57,15 @@ public class YoutubePersistentHttpStream extends PersistentHttpStream {
                     result = currentContent.read(b, off, len);
                     position += result;
                 } else {
-                    result = 0;
                     handleRangeEnd(null, attemptReconnect);
+                    return internalRead(b, off, len, false);
                 }
             } else {
                 result = currentContent.read(b, off, len);
                 if (result >= 0) {
                     position += result;
                     if (position >= rangeEnd && !contentUrl.toString().contains("rn=")) {
-                        handleRangeEnd(null, attemptReconnect);
+                        handleRangeEnd(null, true);
                     }
                 }
             }
@@ -89,15 +89,14 @@ public class YoutubePersistentHttpStream extends PersistentHttpStream {
                     result = currentContent.skip(n);
                     position += result;
                 } else {
-                    result = n;
-                    position += n;
                     handleRangeEnd(null, attemptReconnect);
+                    return internalSkip(n, false);
                 }
             } else {
                 result = currentContent.skip(n);
                 position += result;
                 if (position >= rangeEnd && !contentUrl.toString().contains("rn=")) {
-                    handleRangeEnd(null, attemptReconnect);
+                    handleRangeEnd(null, true);
                 }
             }
 
@@ -123,8 +122,12 @@ public class YoutubePersistentHttpStream extends PersistentHttpStream {
     }
 
     private void handleRangeEnd(IOException exception, boolean attemptReconnect) throws IOException {
-        if (!attemptReconnect || (!HttpClientTools.isRetriableNetworkException(exception) && exception != null)) {
-            throw exception;
+        if (exception != null) {
+            if (!attemptReconnect || !HttpClientTools.isRetriableNetworkException(exception)) {
+                throw exception;
+            }
+        } else if (!attemptReconnect) {
+            throw new IOException("Failed to reconnect to YouTube stream");
         }
 
         close();

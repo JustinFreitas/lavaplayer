@@ -55,7 +55,6 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
 
         // YouTube does not return a segment until it is ready, this might trigger a connect timeout otherwise.
         httpInterface.getContext().setRequestConfig(streamingRequestConfig);
-        updateGlobalSequence().join();
     }
 
     @Override
@@ -66,8 +65,7 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
     @Override
     public void setPosition(long position) {
         state.seeking = true;
-        updateGlobalSequence().join();
-        getActiveExecutor().setPosition(position);
+        super.setPosition(position);
     }
 
     @Override
@@ -105,6 +103,8 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
     }
 
     private void execute(LocalAudioTrackExecutor localExecutor) throws InterruptedException {
+        updateGlobalSequence().join();
+
         if (!trackInfo.isStream && state.absoluteSequence == null) {
             state.absoluteSequence = 0L;
         }
@@ -125,6 +125,8 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
     }
 
     private void seek(long timecode) {
+        updateGlobalSequence().join();
+
         long seconds = TimeUnit.MILLISECONDS.toSeconds(timecode);
 
         if (seconds > state.globalSequence) {
@@ -140,6 +142,10 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
         LocalAudioTrackExecutor localExecutor
     ) throws InterruptedException {
         if (processNextSegment(localExecutor)) {
+            return;
+        }
+
+        if (state.finished) {
             return;
         }
 
@@ -183,6 +189,9 @@ public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
             stream.releaseConnection();
         } catch (IOException e) {
             // IOException here usually means that stream is about to end.
+            if (!trackInfo.isStream) {
+                state.finished = true;
+            }
             return false;
         }
 

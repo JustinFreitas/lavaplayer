@@ -53,13 +53,17 @@ public class YoutubeAccessTokenTracker {
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
     private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(10);
 
-    private final Object tokenLock = new Object();
+    private final Object masterTokenLock = new Object();
+    private final Object accessTokenLock = new Object();
+    private final Object visitorIdLock = new Object();
+    
     private final HttpInterfaceManager httpInterfaceManager;
     private final String email;
     private final String password;
-    private String masterToken;
-    private String accessToken;
-    private String visitorId;
+    
+    private volatile String masterToken;
+    private volatile String accessToken;
+    private volatile String visitorId;
     private long lastMasterTokenUpdate;
     private long lastAccessTokenUpdate;
     private long lastVisitorIdUpdate;
@@ -78,7 +82,7 @@ public class YoutubeAccessTokenTracker {
      * Updates the master token if more than {@link #MASTER_TOKEN_REFRESH_INTERVAL} time has passed since last updated.
      */
     public void updateMasterToken() {
-        synchronized (tokenLock) {
+        synchronized (masterTokenLock) {
             if (DataFormatTools.isNullOrEmpty(email) && DataFormatTools.isNullOrEmpty(password)) {
                 if (!loggedAgeRestrictionsWarning) {
                     log.warn("YouTube auth tokens can't be retrieved because email and password is not set in YoutubeAudioSourceManager, age restricted videos will throw exceptions.");
@@ -102,7 +106,10 @@ public class YoutubeAccessTokenTracker {
             CompletableFuture.runAsync(() -> {
                 try {
                     Thread.sleep(100L);
-                    masterToken = fetchMasterToken();
+                    String newToken = fetchMasterToken();
+                    synchronized (masterTokenLock) {
+                        masterToken = newToken;
+                    }
                     log.info("Updating YouTube master token succeeded, new token is {}.", masterToken);
                 } catch (Exception e) {
                     log.error("YouTube master token update failed.", e);
@@ -115,7 +122,7 @@ public class YoutubeAccessTokenTracker {
      * Updates the access token if more than {@link #accessTokenRefreshInterval} time has passed since last updated.
      */
     public void updateAccessToken() {
-        synchronized (tokenLock) {
+        synchronized (accessTokenLock) {
             if (DataFormatTools.isNullOrEmpty(email) && DataFormatTools.isNullOrEmpty(password)) {
                 if (!loggedAgeRestrictionsWarning) {
                     log.warn("YouTube auth tokens can't be retrieved because email and password is not set in YoutubeAudioSourceManager, age restricted videos will throw exceptions.");
@@ -153,7 +160,7 @@ public class YoutubeAccessTokenTracker {
      * Updates the visitor id if more than {@link #VISITOR_ID_REFRESH_INTERVAL} time has passed since last updated.
      */
     public String updateVisitorId() {
-        synchronized (tokenLock) {
+        synchronized (visitorIdLock) {
             long now = System.currentTimeMillis();
             if (now - lastVisitorIdUpdate < VISITOR_ID_REFRESH_INTERVAL) {
                 log.debug("YouTube visitor id was recently updated, not updating again right away.");
@@ -178,7 +185,7 @@ public class YoutubeAccessTokenTracker {
     }
 
     public String getMasterToken() {
-        synchronized (tokenLock) {
+        synchronized (masterTokenLock) {
             if (masterToken == null) {
                 updateMasterToken();
             }
@@ -188,7 +195,7 @@ public class YoutubeAccessTokenTracker {
     }
 
     public String getAccessToken() {
-        synchronized (tokenLock) {
+        synchronized (accessTokenLock) {
             if (accessToken == null) {
                 updateAccessToken();
             }
@@ -198,7 +205,7 @@ public class YoutubeAccessTokenTracker {
     }
 
     public String getVisitorId() {
-        synchronized (tokenLock) {
+        synchronized (visitorIdLock) {
             if (visitorId == null) {
                 updateVisitorId();
             }

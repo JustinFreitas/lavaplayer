@@ -82,7 +82,7 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
 
     private final ConcurrentMap<String, YoutubeSignatureCipher> cipherCache;
     private final Set<String> dumpedScriptUrls;
-    private final ScriptEngine scriptEngine;
+    private final ThreadLocal<ScriptEngine> scriptEngine;
     private final Object cipherLoadLock;
 
     /**
@@ -90,8 +90,8 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
      */
     public YoutubeSignatureCipherManager() {
         this.cipherCache = new ConcurrentHashMap<>();
-        this.dumpedScriptUrls = new HashSet<>();
-        this.scriptEngine = new RhinoScriptEngineFactory().getScriptEngine();
+        this.dumpedScriptUrls = ConcurrentHashMap.newKeySet();
+        this.scriptEngine = ThreadLocal.withInitial(() -> new RhinoScriptEngineFactory().getScriptEngine());
         this.cipherLoadLock = new Object();
     }
 
@@ -119,7 +119,7 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
 
         if (!DataFormatTools.isNullOrEmpty(nParameter)) {
             try {
-                uri.setParameter("n", cipher.transform(nParameter, scriptEngine));
+                uri.setParameter("n", cipher.transform(nParameter, scriptEngine.get()));
             } catch (ScriptException | NoSuchMethodException e) {
                 dumpProblematicScript(cipherCache.get(playerScript).rawScript, playerScript, String.format("Can't transform n parameter %s with %s n function", nParameter, cipher.nFunction));
             }
@@ -159,12 +159,23 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
 
         if (cipherKey == null) {
             synchronized (cipherLoadLock) {
+                cipherKey = cipherCache.get(cipherScriptUrl);
+                if (cipherKey != null) {
+                    return cipherKey;
+                }
+
                 log.debug("Parsing player script {}", cipherScriptUrl);
 
                 try (ClassicHttpResponse response = httpInterface.execute(new HttpGet(parseTokenScriptUrl(cipherScriptUrl)))) {
                     validateResponseCode(cipherScriptUrl, response);
 
                     cipherKey = extractFromScript(IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8), cipherScriptUrl);
+                    
+                    if (cipherCache.size() > 100) {
+                        cipherCache.clear();
+                        dumpedScriptUrls.clear();
+                    }
+                    
                     cipherCache.put(cipherScriptUrl, cipherKey);
                 }
             }
