@@ -6,7 +6,9 @@ CONNECTOR_EXPORT jlong JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac
 }
 
 CONNECTOR_EXPORT void JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDecoderLibrary_destroy(JNIEnv *jni, jobject me, jlong instance) {
-	aacDecoder_Close((HANDLE_AACDECODER) instance);
+	if (instance != 0) {
+		aacDecoder_Close((HANDLE_AACDECODER) instance);
+	}
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDecoderLibrary_configure(JNIEnv *jni, jobject me, jlong instance, jlong buffer_data) {
@@ -17,9 +19,12 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDecoderLibrary_fill(JNIEnv *jni, jobject me, jlong instance, jobject direct_buffer, jint offset, jint length) {
-	UINT in_length = length;
+	UCHAR* base_buffer = (*jni)->GetDirectBufferAddress(jni, direct_buffer);
+	if (base_buffer == NULL) return -1;
+	
+	UCHAR* buffer = base_buffer + offset;
+	UINT in_length = length - offset;
 	UINT in_left = length - offset;
-	UCHAR* buffer = (*jni)->GetDirectBufferAddress(jni, direct_buffer);
 	
 	AAC_DECODER_ERROR error = aacDecoder_Fill((HANDLE_AACDECODER) instance, &buffer, &in_length, &in_left);
 	if (error != AAC_DEC_OK) {

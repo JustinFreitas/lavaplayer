@@ -21,5 +21,5 @@ class OpusEncoderLibrary {
 
     native void destroy(long instance);
 
-    native int encode(long instance, ShortBuffer directInput, int frameSize, ByteBuffer directOutput, int outputCapacity);
+    native int encode(long instance, ShortBuffer directInput, int inputOffset, int frameSize, ByteBuffer directOutput, int outputOffset, int outputCapacity);
 }

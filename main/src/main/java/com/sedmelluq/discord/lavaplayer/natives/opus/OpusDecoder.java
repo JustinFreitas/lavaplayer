@@ -43,7 +43,7 @@ public class OpusDecoder extends NativeResourceHolder {
         }
 
         directOutput.clear();
-        int result = library.decode(instance, directInput, directInput.remaining(), directOutput, directOutput.remaining() / channels);
+        int result = library.decode(instance, directInput, directInput.position(), directInput.remaining(), directOutput, directOutput.position(), directOutput.remaining() / channels);
 
         if (result < 0) {
             throw new IllegalStateException("Decoding failed with error " + result);

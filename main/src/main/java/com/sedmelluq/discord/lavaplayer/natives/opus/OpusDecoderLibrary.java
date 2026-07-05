@@ -19,5 +19,5 @@ class OpusDecoderLibrary {
 
     native void destroy(long instance);
 
-    native int decode(long instance, ByteBuffer directInput, int inputSize, ShortBuffer directOutput, int frameSize);
+    native int decode(long instance, ByteBuffer directInput, int inputOffset, int inputSize, ShortBuffer directOutput, int outputOffset, int frameSize);
 }

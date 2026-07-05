@@ -218,15 +218,16 @@ public class TwitchStreamAudioSourceManager implements AudioSourceManager, HttpC
             try (HttpInterface httpInterface = getHttpInterface()) {
                 HttpGet get = new HttpGet(TwitchConstants.TWITCH_URL);
                 get.setHeader("Accept", "text/html");
-                ClassicHttpResponse response = httpInterface.execute(get);
-                HttpClientTools.assertSuccessWithContent(response, "twitch main page");
+                try (ClassicHttpResponse response = httpInterface.execute(get)) {
+                    HttpClientTools.assertSuccessWithContent(response, "twitch main page");
 
-                String responseText = EntityUtils.toString(response.getEntity());
-                twitchClientId = DataFormatTools.extractBetween(responseText, "clientId=\"", "\"");
+                    String responseText = EntityUtils.toString(response.getEntity());
+                    twitchClientId = DataFormatTools.extractBetween(responseText, "clientId=\"", "\"");
 
-                for (Header header : response.getHeaders()) {
-                    if (header.getName().contains("Set-Cookie") && header.getValue().contains("unique_id=")) {
-                        twitchDeviceId = DataFormatTools.extractBetween(header.toString(), "unique_id=", ";");
+                    for (Header header : response.getHeaders()) {
+                        if (header.getName().contains("Set-Cookie") && header.getValue().contains("unique_id=")) {
+                            twitchDeviceId = DataFormatTools.extractBetween(header.toString(), "unique_id=", ";");
+                        }
                     }
                 }
             } catch (IOException | ParseException e) {

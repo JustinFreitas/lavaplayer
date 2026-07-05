@@ -98,11 +98,17 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 	size_t chunk = available > buffer_length ? buffer_length : available;
 
 	if (chunk > 0) {
-		for (int i = 0; i < state->info.channels; i++) {
-			jfloatArray channel = (*jni)->GetObjectArrayElement(jni, channels, i);
+		int java_channels = (*jni)->GetArrayLength(jni, channels);
+		int limit = state->info.channels < java_channels ? state->info.channels : java_channels;
 
+		for (int i = 0; i < limit; i++) {
+			jfloatArray channel = (*jni)->GetObjectArrayElement(jni, channels, i);
+			if ((*jni)->ExceptionCheck(jni)) {
+				break; // Stop execution on pending exception
+			}
 			if (channel != NULL) {
 				(*jni)->SetFloatArrayRegion(jni, channel, 0, chunk, buffers[i]);
+				(*jni)->DeleteLocalRef(jni, channel);
 			}
 		}
 
@@ -119,6 +125,9 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 
 CONNECTOR_EXPORT void JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_destroy(JNIEnv *jni, jobject me, jlong instance) {
 	vorbis_state_t* state = (vorbis_state_t*) instance;
+	if (state == NULL) {
+		return;
+	}
 
 	if (state->initialised) {
 		vorbis_block_clear(&state->block);

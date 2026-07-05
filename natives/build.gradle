@@ -135,7 +135,7 @@ def getMsBuildLocation() {
 
         def outStream = new StringBuilder()
         def errStream = new StringBuilder()
-        def process = [vswhere.absolutePath, "-latest", "-find",
+        def process = [vswhere.absolutePath, "-products", "*", "-latest", "-find",
             "MSBuild/**/Bin/MSBuild.exe"].execute()
         process.consumeProcessOutput(outStream, errStream)
         process.waitFor()
@@ -186,7 +186,7 @@ def findVcTool(name) {
 
     def outStream = new StringBuilder()
     def errStream = new StringBuilder()
-    def process = [vswhere.absolutePath, "-latest", "-find",
+    def process = [vswhere.absolutePath, "-products", "*", "-latest", "-find",
         "VC/Tools/MSVC/**/bin/Hostx64/x64/${name}"].execute()
     process.consumeProcessOutput(outStream, errStream)
     process.waitFor()

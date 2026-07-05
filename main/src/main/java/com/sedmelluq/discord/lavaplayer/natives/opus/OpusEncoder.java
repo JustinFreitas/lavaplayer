@@ -42,7 +42,7 @@ public class OpusEncoder extends NativeResourceHolder {
         }
 
         directOutput.clear();
-        int result = library.encode(instance, directInput, frameSize, directOutput, directOutput.capacity());
+        int result = library.encode(instance, directInput, directInput.position(), frameSize, directOutput, directOutput.position(), directOutput.capacity());
 
         if (result < 0) {
             throw new IllegalStateException("Encoding failed with error " + result);

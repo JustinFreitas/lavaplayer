@@ -18,6 +18,18 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samp
 		jfloatArray in_array, jint in_offset, jint in_length, jfloatArray out_array, jint out_offset, jint out_length, jboolean end_of_input,
 		jdouble source_ratio, jintArray progress_array) {
 
+	jsize in_len = (*jni)->GetArrayLength(jni, in_array);
+	jsize out_len = (*jni)->GetArrayLength(jni, out_array);
+
+	if (in_offset < 0 || in_length < 0 || (in_offset + in_length) > in_len ||
+		out_offset < 0 || out_length < 0 || (out_offset + out_length) > out_len) {
+		jclass exClass = (*jni)->FindClass(jni, "java/lang/ArrayIndexOutOfBoundsException");
+		if (exClass != NULL) {
+			(*jni)->ThrowNew(jni, exClass, "JNI bounds violation");
+		}
+		return -1;
+	}
+
 	float* in = (*jni)->GetPrimitiveArrayCritical(jni, in_array, NULL);
 	float* out = (*jni)->GetPrimitiveArrayCritical(jni, out_array, NULL);
 

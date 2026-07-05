@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -82,7 +83,7 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
 
     private final ConcurrentMap<String, YoutubeSignatureCipher> cipherCache;
     private final Set<String> dumpedScriptUrls;
-    private final ThreadLocal<ScriptEngine> scriptEngine;
+    private final ConcurrentLinkedQueue<ScriptEngine> scriptEnginePool;
     private final Object cipherLoadLock;
 
     /**
@@ -91,7 +92,7 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
     public YoutubeSignatureCipherManager() {
         this.cipherCache = new ConcurrentHashMap<>();
         this.dumpedScriptUrls = ConcurrentHashMap.newKeySet();
-        this.scriptEngine = ThreadLocal.withInitial(() -> new RhinoScriptEngineFactory().getScriptEngine());
+        this.scriptEnginePool = new ConcurrentLinkedQueue<>();
         this.cipherLoadLock = new Object();
     }
 
@@ -119,7 +120,15 @@ public class YoutubeSignatureCipherManager implements YoutubeSignatureResolver {
 
         if (!DataFormatTools.isNullOrEmpty(nParameter)) {
             try {
-                uri.setParameter("n", cipher.transform(nParameter, scriptEngine.get()));
+                ScriptEngine engine = scriptEnginePool.poll();
+                if (engine == null) {
+                    engine = new RhinoScriptEngineFactory().getScriptEngine();
+                }
+                try {
+                    uri.setParameter("n", cipher.transform(nParameter, engine));
+                } finally {
+                    scriptEnginePool.add(engine);
+                }
             } catch (ScriptException | NoSuchMethodException e) {
                 dumpProblematicScript(cipherCache.get(playerScript).rawScript, playerScript, String.format("Can't transform n parameter %s with %s n function", nParameter, cipher.nFunction));
             }

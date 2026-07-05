@@ -6,6 +6,8 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * HTTP interface manager which reuses an HttpContext by keeping it as a thread local. In case a new interface is
@@ -13,7 +15,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
  * client instance used is created lazily.
  */
 public class ThreadLocalHttpInterfaceManager extends AbstractHttpInterfaceManager {
-    private final ThreadLocal<HttpInterface> httpInterfaces;
+    private final ConcurrentLinkedQueue<HttpInterface> interfacePool;
     private final SettableHttpRequestFilter filter;
 
     /**
@@ -24,26 +26,31 @@ public class ThreadLocalHttpInterfaceManager extends AbstractHttpInterfaceManage
         super(clientBuilder, requestConfig);
 
         this.filter = new SettableHttpRequestFilter();
-        this.httpInterfaces = ThreadLocal.withInitial(() ->
-            new HttpInterface(getSharedClient(), HttpClientContext.create(), false, filter)
-        );
+        this.interfacePool = new ConcurrentLinkedQueue<>();
     }
 
     @Override
     public HttpInterface getInterface() {
         CloseableHttpClient client = getSharedClient();
 
-        HttpInterface httpInterface = httpInterfaces.get();
-        if (httpInterface.getHttpClient() != client) {
-            httpInterfaces.remove();
-            httpInterface = httpInterfaces.get();
+        HttpInterface httpInterface = interfacePool.poll();
+        while (httpInterface != null) {
+            if (httpInterface.getHttpClient() == client) {
+                break;
+            }
+            httpInterface = interfacePool.poll();
         }
 
-        if (httpInterface.acquire()) {
-            return httpInterface;
+        if (httpInterface == null) {
+            httpInterface = new HttpInterface(client, HttpClientContext.create(), false, filter) {
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    interfacePool.add(this);
+                }
+            };
         }
 
-        httpInterface = new HttpInterface(client, HttpClientContext.create(), false, filter);
         httpInterface.acquire();
         return httpInterface;
     }

@@ -96,7 +96,13 @@ public class OrderedExecutor {
                 }
             }
 
-            states.remove(key, queue);
+            synchronized (states) {
+                if (queue.isEmpty()) {
+                    states.remove(key, queue);
+                } else {
+                    delegateService.execute(new ChannelRunnable(key));
+                }
+            }
         }
     }
 }

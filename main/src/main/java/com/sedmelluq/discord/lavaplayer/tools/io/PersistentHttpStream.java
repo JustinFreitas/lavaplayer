@@ -121,8 +121,18 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
         currentResponse = httpInterface.execute(getConnectRequest());
         lastStatusCode = currentResponse.getCode();
 
-        if (!skipStatusCheck && !validateStatusCode(currentResponse, retryOnServerError)) {
-            return false;
+        if (!skipStatusCheck) {
+            try {
+                if (!validateStatusCode(currentResponse, retryOnServerError)) {
+                    currentResponse.close();
+                    currentResponse = null;
+                    return false;
+                }
+            } catch (Exception e) {
+                currentResponse.close();
+                currentResponse = null;
+                throw e;
+            }
         }
 
         if (currentResponse.getEntity() == null) {

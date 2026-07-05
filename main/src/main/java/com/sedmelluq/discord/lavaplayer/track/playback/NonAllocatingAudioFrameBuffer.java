@@ -146,7 +146,7 @@ public class NonAllocatingAudioFrameBuffer extends AbstractAudioFrameBuffer {
         throws TimeoutException, InterruptedException {
 
         long currentTime = System.nanoTime();
-        long endTime = currentTime + unit.toMillis(timeout);
+        long endTime = currentTime + unit.toNanos(timeout);
 
         synchronized (synchronizer) {
             while (frameCount == 0) {
@@ -156,10 +156,14 @@ public class NonAllocatingAudioFrameBuffer extends AbstractAudioFrameBuffer {
                     return true;
                 }
 
-                synchronizer.wait(endTime - currentTime);
+                long remainingNanos = endTime - currentTime;
+                if (remainingNanos > 0) {
+                    synchronizer.wait(remainingNanos / 1000000, (int) (remainingNanos % 1000000));
+                }
+                
                 currentTime = System.nanoTime();
 
-                if (currentTime >= endTime) {
+                if (currentTime - endTime >= 0) {
                     throw new TimeoutException();
                 }
             }
