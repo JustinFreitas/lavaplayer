@@ -4,6 +4,12 @@ on:
         branches: [ '**' ]
         paths-ignore: [ '**.md' ]
     workflow_call:
+        inputs:
+            publish:
+                description: 'Run the publish task'
+                required: false
+                type: boolean
+                default: false
         secrets:
             MAVEN_USERNAME:
                 required: false
@@ -44,7 +50,12 @@ jobs:
             -   name: Setup Gradle
                 uses: gradle/actions/setup-gradle@v4
 
+            -   name: Build
+                if: ${{ !inputs.publish }}
+                run: ./gradlew build --no-daemon
+
             -   name: Build and Publish
+                if: ${{ inputs.publish }}
                 run: ./gradlew build publish --no-daemon -PMAVEN_USERNAME=$MAVEN_USERNAME -PMAVEN_PASSWORD=$MAVEN_PASSWORD
 
             -   name: Upload Artifacts
