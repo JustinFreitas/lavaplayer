@@ -41,3 +41,11 @@ jobs:
                     omitDraftDuringUpdate: true
                     omitNameDuringUpdate: true
                     omitPrereleaseDuringUpdate: true
+
+            -   name: Dispatch youtube-source bump
+                uses: peter-evans/repository-dispatch@v3
+                with:
+                    token: ${{ secrets.PIPELINE_PAT }}
+                    repository: JustinFreitas/youtube-source
+                    event-type: bump-lavaplayer
+                    client-payload: '{"lavaplayer_version": "${{ github.event.release.tag_name }}"}'
