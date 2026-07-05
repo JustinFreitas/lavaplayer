@@ -1,0 +1,241 @@
+name: Dependency Autopilot
+
+on:
+  schedule:
+    # Run every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    outputs:
+      updated: ${{ steps.run-script.outputs.updated }}
+      natives_updated: ${{ steps.run-script.outputs.natives_updated }}
+      gradle_updated: ${{ steps.run-script.outputs.gradle_updated }}
+      next_version: ${{ steps.run-script.outputs.next_version }}
+      branch_name: ${{ steps.commit-changes.outputs.branch_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 25
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Dependency Scan
+        run: ./gradlew dependencyUpdates --no-daemon
+
+      - name: Run Dependency Update Script
+        id: run-script
+        run: python .github/scripts/check_and_update.py
+
+      - name: Commit and Push Version Catalog changes (if any)
+        id: commit-changes
+        if: steps.run-script.outputs.updated == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH_NAME="dep-update/${{ steps.run-script.outputs.next_version }}"
+          git checkout -b "$BRANCH_NAME"
+          git add gradle/libs.versions.toml
+          # Add gradle-wrapper files if modified
+          git add gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.jar || true
+          git commit -m "chore(deps): automatically update dependencies to ${{ steps.run-script.outputs.next_version }}"
+          git push origin "$BRANCH_NAME" --force
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload changes metadata
+        if: steps.run-script.outputs.updated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency_changes
+          path: build/dependency_changes.json
+
+  build-natives-windows:
+    needs: check-dependencies
+    if: needs.check-dependencies.outputs.updated == 'true' && needs.check-dependencies.outputs.natives_updated == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-dependencies.outputs.branch_name }}
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 25
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build natives (Windows)
+        run: ./gradlew :natives:compileNatives --no-daemon
+
+      - name: Upload Windows connector
+        uses: actions/upload-artifact@v4
+        with:
+          name: connector-win-x86-64
+          path: natives-publish/src/main/resources/natives/win-x86-64/connector.dll
+
+  build-natives-linux:
+    needs: check-dependencies
+    if: needs.check-dependencies.outputs.updated == 'true' && needs.check-dependencies.outputs.natives_updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-dependencies.outputs.branch_name }}
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 25
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential automake autoconf libtool
+
+      - name: Build natives (Linux)
+        run: ./gradlew :natives:compileNatives --no-daemon
+
+      - name: Upload Linux connector
+        uses: actions/upload-artifact@v4
+        with:
+          name: connector-linux-x86-64
+          path: natives-publish/src/main/resources/natives/linux-x86-64/libconnector.so
+
+  build-natives-macos:
+    needs: check-dependencies
+    if: needs.check-dependencies.outputs.updated == 'true' && needs.check-dependencies.outputs.natives_updated == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-dependencies.outputs.branch_name }}
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 25
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install build tools
+        run: brew install automake autoconf libtool
+
+      - name: Build natives (macOS)
+        run: ./gradlew :natives:compileNatives --no-daemon
+
+      - name: Upload macOS connector
+        uses: actions/upload-artifact@v4
+        with:
+          name: connector-darwin
+          path: natives-publish/src/main/resources/natives/darwin/libconnector.dylib
+
+  release:
+    needs: [check-dependencies, build-natives-windows, build-natives-linux, build-natives-macos]
+    if: always() && needs.check-dependencies.result == 'success' && needs.check-dependencies.outputs.updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-dependencies.outputs.branch_name }}
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Download changes metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency_changes
+          path: build
+
+      - name: Download Windows connector
+        if: needs.check-dependencies.outputs.natives_updated == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: connector-win-x86-64
+          path: natives-publish/src/main/resources/natives/win-x86-64
+
+      - name: Download Linux connector
+        if: needs.check-dependencies.outputs.natives_updated == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: connector-linux-x86-64
+          path: natives-publish/src/main/resources/natives/linux-x86-64
+
+      - name: Download macOS connector
+        if: needs.check-dependencies.outputs.natives_updated == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: connector-darwin
+          path: natives-publish/src/main/resources/natives/darwin
+
+      - name: Commit native binaries and Update Changelog
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ "${{ needs.check-dependencies.outputs.natives_updated }}" = "true" ]; then
+            git add natives-publish/src/main/resources/natives/
+            git commit -m "chore(natives): commit rebuilt native binaries" || true
+          fi
+          
+          python .github/scripts/check_and_update.py --update-changelog
+          
+          git add CHANGELOG.md
+          git commit -m "chore(release): prepare ${{ needs.check-dependencies.outputs.next_version }}"
+          git push origin ${{ needs.check-dependencies.outputs.branch_name }}
+
+      - name: Merge to main and Tag
+        run: |
+          git checkout main
+          git pull origin main
+          git merge ${{ needs.check-dependencies.outputs.branch_name }} --no-ff -m "Merge branch '${{ needs.check-dependencies.outputs.branch_name }}' into main"
+          git tag -a "${{ needs.check-dependencies.outputs.next_version }}" -m "Release version ${{ needs.check-dependencies.outputs.next_version }}"
+          git push origin main
+          git push origin "${{ needs.check-dependencies.outputs.next_version }}"
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ needs.check-dependencies.outputs.next_version }}
+          name: Release ${{ needs.check-dependencies.outputs.next_version }}
+          body: |
+            ## Automated Dependency Update Release
+            This release was automatically generated by the Dependency Autopilot workflow.
+            
+            ### Changes:
+            $(python -c "import json; d = json.load(open('build/dependency_changes.json')); print('\n'.join('- ' + c for c in d['changes']))")
+          token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}

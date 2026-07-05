@@ -16,6 +16,7 @@ tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
         val isStable = stableKeyword || regex.matches(candidate.version)
         !isStable
     }
+    outputFormatter = "json,plain"
 }
 
 val (gitVersion, release) = versionFromGit()
