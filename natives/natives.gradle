@@ -29,8 +29,7 @@ static def getBuildParameters(base) {
 }
 
 def getHomeDirectory() {
-    def directory = file(System.getProperty('java.home'))
-    return directory.name == 'jre' ? directory.parentFile.absolutePath : directory.absolutePath
+    return 'C:/Users/justi/.jdks/azul-25.0.2'
 }
 
 def createBuildTask(tasksHolder, config) {
@@ -56,14 +55,22 @@ def createBuildTask(tasksHolder, config) {
         }
 
         workingDir buildDirectory
-        executable 'cmake'
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            executable new File(System.getenv("ProgramFiles(x86)"), "Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe").absolutePath
+        } else {
+            executable 'cmake'
+        }
         args(*(parameters.setupArguments + ['../..']))
         environment parameters.env
     }
 
     def buildTask = tasksHolder.create("${taskBase}-build", Exec) {
         workingDir buildDirectory
-        executable 'cmake'
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            executable new File(System.getenv("ProgramFiles(x86)"), "Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe").absolutePath
+        } else {
+            executable 'cmake'
+        }
         args(*(['--build', '.'] + parameters.buildArguments))
         environment parameters.env
     }
