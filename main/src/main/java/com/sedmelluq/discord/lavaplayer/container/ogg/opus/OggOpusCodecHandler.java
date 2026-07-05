@@ -39,13 +39,13 @@ public class OggOpusCodecHandler implements OggCodecHandler {
         ByteBuffer firstPacket = broker.getBuffer();
         int sampleRate = getSampleRate(firstPacket);
         verifyFirstPacket(firstPacket);
+        int channelCount = firstPacket.get(9) & 0xFF;
+        int headerGain = getHeaderGain(firstPacket);
         loadCommentsHeader(stream, broker);
 
         Map<String, String> tags = parseTags(broker.getBuffer(), broker.isTruncated());
 
         stream.setSeekPoints(stream.createSeekTable(sampleRate));
-        int channelCount = firstPacket.get(9) & 0xFF;
-        int headerGain = getHeaderGain(firstPacket);
         return new Blueprint(broker, channelCount, sampleRate, tags, headerGain);
     }
 
