@@ -75,7 +75,7 @@ public final class DefaultAudioPlayerManager implements AudioPlayerManager {
         sourceManagers = new ArrayList<>();
 
         // Executors
-        trackPlaybackExecutorService = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 10, TimeUnit.SECONDS,
+        trackPlaybackExecutorService = new ThreadPoolExecutor(1, 2048, 10, TimeUnit.SECONDS,
             new SynchronousQueue<>(), new DaemonThreadFactory("playback"));
         trackInfoExecutorService = ExecutorTools.createEagerlyScalingExecutor(1, DEFAULT_LOADER_POOL_SIZE,
             TimeUnit.SECONDS.toMillis(30), LOADER_QUEUE_CAPACITY, new DaemonThreadFactory("info-loader"));

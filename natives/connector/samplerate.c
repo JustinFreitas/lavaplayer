@@ -7,11 +7,15 @@ CONNECTOR_EXPORT jlong JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_sam
 }
 
 CONNECTOR_EXPORT void JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_destroy(JNIEnv *jni, jobject me, jlong instance) {
-	src_delete((SRC_STATE*)instance);
+	if (instance != 0) {
+		src_delete((SRC_STATE*)instance);
+	}
 }
 
 CONNECTOR_EXPORT void JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_reset(JNIEnv *jni, jobject me, jlong instance) {
-	src_reset((SRC_STATE*)instance);
+	if (instance != 0) {
+		src_reset((SRC_STATE*)instance);
+	}
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_process(JNIEnv *jni, jobject me, jlong instance,

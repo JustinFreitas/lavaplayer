@@ -81,9 +81,10 @@ public final class RotatingIpRoutePlanner extends AbstractRoutePlanner {
     protected Tuple<InetAddress, InetAddress> determineAddressPair(final Tuple<Inet4Address, Inet6Address> remoteAddresses) throws HttpException {
         InetAddress currentAddress = null;
         InetAddress remoteAddress;
+        boolean rotate = next.compareAndSet(true, false);
         if (ipBlock.getType() == Inet4Address.class) {
             if (remoteAddresses.l != null) {
-                if (index.get().compareTo(BigInteger.ZERO) == 0 || next.get()) {
+                if (index.get().compareTo(BigInteger.ZERO) == 0 || rotate) {
                     currentAddress = extractLocalAddress();
                     log.info("Selected " + currentAddress.toString() + " as new outgoing ip");
                 }
@@ -93,7 +94,7 @@ public final class RotatingIpRoutePlanner extends AbstractRoutePlanner {
             }
         } else if (ipBlock.getType() == Inet6Address.class) {
             if (remoteAddresses.r != null) {
-                if (index.get().compareTo(BigInteger.ZERO) == 0 || next.get()) {
+                if (index.get().compareTo(BigInteger.ZERO) == 0 || rotate) {
                     currentAddress = extractLocalAddress();
                     log.info("Selected " + currentAddress.toString() + " as new outgoing ip");
                 }
@@ -110,7 +111,6 @@ public final class RotatingIpRoutePlanner extends AbstractRoutePlanner {
 
         if (currentAddress == null && index.get().compareTo(BigInteger.ZERO) > 0)
             currentAddress = ipBlock.getAddressAtIndex(index.get().subtract(BigInteger.ONE));
-        next.set(false);
         return new Tuple<>(currentAddress, remoteAddress);
     }
 

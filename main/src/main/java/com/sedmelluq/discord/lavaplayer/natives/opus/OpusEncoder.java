@@ -24,6 +24,23 @@ public class OpusEncoder extends NativeResourceHolder {
         if (instance == 0) {
             throw new IllegalStateException("Failed to create an encoder instance");
         }
+
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final OpusEncoderLibrary library;
+        private final long instance;
+
+        Destroyer(OpusEncoderLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
+        }
     }
 
     /**
@@ -54,8 +71,5 @@ public class OpusEncoder extends NativeResourceHolder {
         return result;
     }
 
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
-    }
+
 }

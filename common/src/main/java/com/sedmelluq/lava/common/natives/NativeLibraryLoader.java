@@ -135,7 +135,10 @@ public class NativeLibraryLoader {
     }
 
     private Path prepareExtractionDirectory() throws IOException {
-        Path extractionDirectory = detectExtractionBaseDirectory().resolve(String.valueOf(System.currentTimeMillis()));
+        Path baseDir = detectExtractionBaseDirectory();
+        cleanStaleDirectories(baseDir);
+
+        Path extractionDirectory = baseDir.resolve(String.valueOf(System.currentTimeMillis()));
 
         if (!Files.isDirectory(extractionDirectory)) {
             log.debug("Native library {}: extraction directory {} does not exist, creating.", libraryName,
@@ -153,6 +156,38 @@ public class NativeLibraryLoader {
         }
 
         return extractionDirectory;
+    }
+
+    private static void cleanStaleDirectories(Path baseDir) {
+        if (!Files.exists(baseDir)) {
+            return;
+        }
+
+        try (java.util.stream.Stream<Path> stream = Files.list(baseDir)) {
+            stream.forEach(path -> {
+                if (Files.isDirectory(path)) {
+                    try {
+                        Long.parseLong(path.getFileName().toString());
+                        deleteDirectoryRecursively(path);
+                    } catch (NumberFormatException ignored) {
+                        // Ignore directories that don't match the timestamp naming pattern
+                    } catch (IOException e) {
+                        // Ignore files/directories that are locked or cannot be deleted
+                        log.trace("Failed to clean stale native library directory {}", path, e);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            log.debug("Failed to list files in base directory for stale library cleaning", e);
+        }
+    }
+
+    private static void deleteDirectoryRecursively(Path path) throws IOException {
+        try (java.util.stream.Stream<Path> walk = Files.walk(path)) {
+            walk.sorted(java.util.Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(java.io.File::delete);
+        }
     }
 
     private Path detectExtractionBaseDirectory() {

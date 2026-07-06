@@ -1,5 +1,28 @@
 # Change Log
 
+## [2.2.6_27] - 2026-07-05
+* Migrated `NativeResourceHolder` to use Java's `Cleaner` API, replacing deprecated `finalize()` and implementing `AutoCloseable` for `try-with-resources` support
+* Implemented automatic JNI binary cache directory cleanup in `NativeLibraryLoader` to prevent disk space leaks
+* Robustified `/proc/[pid]/stat` telemetry parser in Linux native connector against spaces and parentheses in process command names
+* Fixed JNI NULL pointer dereferences and handle validation checks in `fdk-aac.c`, `mpg123.c`, `vorbis.c`, and `samplerate.c`
+* Resolved event listener deadlock risk in `DefaultAudioPlayer` by moving the `TrackEndEvent` dispatch outside of the synchronized lock
+* Fixed task stranding race condition in `OrderedExecutor` by synchronizing queue additions
+* Cap playback thread pool size to 2048 in `DefaultAudioPlayerManager` to avoid OS-level thread exhaustion
+* Fixed concurrency and race conditions in `youtube-rotator` route planners (HashMap to ConcurrentHashMap and atomic IP rotation signal consumption)
+* Added volatile visibility qualifiers on frame buffer control flags and corrected copy-paste logger declaration in `XmAudioTrack`
+
+## [2.2.6_26] - 2026-07-05
+* Fix natives.gradle to dynamically resolve cmake and JAVA_HOME for both CI and local builds
+
+## [2.2.6_25] - 2026-07-04
+* Fixed Ogg/Opus parsing issue where metadata tags could overwrite broker buffers before channel count and header gain were read
+
+## [2.2.6_24] - 2026-07-04
+* Forced Opus decoder to always use 48000 Hz sample rate for consistency
+
+## [2.2.6_23] - 2026-07-04
+* CI optimization: Only publish artifacts on release workflow runs
+
 ## [2.2.6_22] - 2026-07-04
 * Resolved a critical race condition in `YoutubeSignatureCipherManager` by isolating the Rhino `ScriptEngine` into a `ThreadLocal` context
 * Fixed missing double-checked locking that caused a stampeding herd when evaluating un-cached YouTube cipher scripts

@@ -40,19 +40,21 @@ public class OrderedExecutor {
     }
 
     private void queueOrSubmit(ChannelRunnable runnable, Runnable delegate) {
-        BlockingQueue<Runnable> newQueue = new LinkedBlockingQueue<>();
-        newQueue.add(delegate);
+        synchronized (states) {
+            BlockingQueue<Runnable> newQueue = new LinkedBlockingQueue<>();
+            newQueue.add(delegate);
 
-        BlockingQueue<Runnable> existing = states.putIfAbsent(runnable.key, newQueue);
+            BlockingQueue<Runnable> existing = states.putIfAbsent(runnable.key, newQueue);
 
-        if (existing != null) {
-            existing.add(delegate);
+            if (existing != null) {
+                existing.add(delegate);
 
-            if (states.putIfAbsent(runnable.key, existing) == null) {
-                delegateService.execute(new ChannelRunnable(runnable.key));
+                if (states.putIfAbsent(runnable.key, existing) == null) {
+                    delegateService.execute(new ChannelRunnable(runnable.key));
+                }
+            } else {
+                delegateService.execute(runnable);
             }
-        } else {
-            delegateService.execute(runnable);
         }
     }
 

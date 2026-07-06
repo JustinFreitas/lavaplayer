@@ -18,6 +18,10 @@ public class OpusDecoder extends NativeResourceHolder {
      * @param channels   Channel count
      */
     public OpusDecoder(int sampleRate, int channels) {
+        if (channels != 1 && channels != 2) {
+            throw new IllegalArgumentException("Opus channels must be 1 or 2");
+        }
+
         library = OpusDecoderLibrary.getInstance();
         instance = library.create(sampleRate, channels);
         this.channels = channels;
@@ -25,6 +29,23 @@ public class OpusDecoder extends NativeResourceHolder {
         if (instance == 0) {
             throw new IllegalStateException("Failed to create a decoder instance with sample rate " +
                 sampleRate + " and channel count " + channels);
+        }
+
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final OpusDecoderLibrary library;
+        private final long instance;
+
+        Destroyer(OpusDecoderLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
         }
     }
 
@@ -55,10 +76,7 @@ public class OpusDecoder extends NativeResourceHolder {
         return result;
     }
 
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
-    }
+
 
     /**
      * Get the frame size from an opus packet

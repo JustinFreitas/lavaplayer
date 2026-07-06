@@ -87,10 +87,12 @@ public class DefaultAudioPlayer implements AudioPlayer, TrackStateListener {
 
             if (previousTrack != null) {
                 previousTrack.stop();
-                dispatchEvent(new TrackEndEvent(this, previousTrack, newTrack == null ? STOPPED : REPLACED));
-
                 shadowTrack = previousTrack;
             }
+        }
+
+        if (previousTrack != null) {
+            dispatchEvent(new TrackEndEvent(this, previousTrack, newTrack == null ? STOPPED : REPLACED));
         }
 
         if (newTrack == null) {

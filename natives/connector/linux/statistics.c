@@ -27,11 +27,17 @@ static void read_process_stats(jlong* process_user, jlong* process_kernel) {
 	FILE* process_stat_file = fopen(process_file, "r");
 	
 	if (process_stat_file != NULL) {
-		int64_t user_time, kernel_time;
+		char buffer[1024];
 		
-		if (fscanf(process_stat_file, "%*d %*s %*s %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d %"PRId64" %"PRId64, &user_time, &kernel_time) == 2) {
-			*process_user = user_time;
-			*process_kernel = kernel_time;
+		if (fgets(buffer, sizeof(buffer), process_stat_file) != NULL) {
+			char* last_paren = strrchr(buffer, ')');
+			if (last_paren != NULL) {
+				int64_t user_time, kernel_time;
+				if (sscanf(last_paren + 2, "%*s %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d %"PRId64" %"PRId64, &user_time, &kernel_time) == 2) {
+					*process_user = user_time;
+					*process_kernel = kernel_time;
+				}
+			}
 		}
 		
 		fclose(process_stat_file);

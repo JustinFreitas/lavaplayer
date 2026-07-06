@@ -31,6 +31,23 @@ public class Mp3Decoder extends NativeResourceHolder {
         if (instance == 0) {
             throw new IllegalStateException("Failed to create a decoder instance");
         }
+
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final Mp3DecoderLibrary library;
+        private final long instance;
+
+        Destroyer(Mp3DecoderLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
+        }
     }
 
     /**
@@ -65,10 +82,7 @@ public class Mp3Decoder extends NativeResourceHolder {
         return result / 2;
     }
 
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
-    }
+
 
     private static int getFrameBitRate(byte[] buffer, int offset) {
         return MpegVersion.getVersion(buffer, offset).getBitRate(buffer, offset);

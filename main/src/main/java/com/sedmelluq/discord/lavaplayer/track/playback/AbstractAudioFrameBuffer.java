@@ -10,9 +10,9 @@ public abstract class AbstractAudioFrameBuffer implements AudioFrameBuffer {
     protected final Object synchronizer;
     protected volatile boolean locked;
     protected volatile boolean receivedFrames;
-    protected boolean terminated;
-    protected boolean terminateOnEmpty;
-    protected boolean clearOnInsert;
+    protected volatile boolean terminated;
+    protected volatile boolean terminateOnEmpty;
+    protected volatile boolean clearOnInsert;
 
     protected AbstractAudioFrameBuffer(AudioDataFormat format) {
         this.format = format;

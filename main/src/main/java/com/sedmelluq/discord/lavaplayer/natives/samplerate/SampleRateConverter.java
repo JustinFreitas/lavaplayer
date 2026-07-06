@@ -24,6 +24,23 @@ public class SampleRateConverter extends NativeResourceHolder {
         if (instance == 0) {
             throw new IllegalStateException("Could not create an instance of sample rate converter.");
         }
+
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final SampleRateLibrary library;
+        private final long instance;
+
+        Destroyer(SampleRateLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
+        }
     }
 
     /**
@@ -53,11 +70,6 @@ public class SampleRateConverter extends NativeResourceHolder {
         if (error != 0) {
             throw new RuntimeException("Failed to convert sample rate, error " + error + ".");
         }
-    }
-
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
     }
 
     /**

@@ -12,6 +12,15 @@ typedef struct vorbis_state_s {
 
 static void build_ogg_packet(JNIEnv* jni, ogg_packet* packet, jobject direct_buffer, jint offset, jint length, jboolean is_beginning) {
 	unsigned char* packet_base = (*jni)->GetDirectBufferAddress(jni, direct_buffer);
+	if (packet_base == NULL) {
+		packet->packet = NULL;
+		packet->bytes = 0;
+		packet->b_o_s = 0;
+		packet->e_o_s = 0;
+		packet->granulepos = 0;
+		packet->packetno = 0;
+		return;
+	}
 	
 	packet->packet = &packet_base[offset];
 	packet->bytes = length;
@@ -37,6 +46,16 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 	jlong instance, jobject id_direct_buffer, jint id_offset, jint id_length, jobject setup_direct_buffer, jint setup_offset, jint setup_length) {
 
 	vorbis_state_t* state = (vorbis_state_t*) instance;
+	if (state == NULL) {
+		return JNI_FALSE;
+	}
+	if (id_direct_buffer == NULL || setup_direct_buffer == NULL) {
+		return JNI_FALSE;
+	}
+	if ((*jni)->GetDirectBufferAddress(jni, id_direct_buffer) == NULL ||
+		(*jni)->GetDirectBufferAddress(jni, setup_direct_buffer) == NULL) {
+		return JNI_FALSE;
+	}
 
 	// Dummy comment instance - needs non-NULL vendor, otherwise headerin will reject setup (codebook) packet.
 	vorbis_comment comment;
@@ -71,11 +90,20 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_getChannelCount(JNIEnv *jni, jobject me, jlong instance) {
 	vorbis_state_t* state = (vorbis_state_t*) instance;
+	if (state == NULL) {
+		return 0;
+	}
 	return state->info.channels;
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_input(JNIEnv *jni, jobject me, jlong instance, jobject direct_buffer, jint offset, jint length) {
 	vorbis_state_t* state = (vorbis_state_t*) instance;
+	if (state == NULL) {
+		return -1;
+	}
+	if (direct_buffer == NULL || (*jni)->GetDirectBufferAddress(jni, direct_buffer) == NULL) {
+		return -1;
+	}
 	ogg_packet packet;
 
 	build_ogg_packet(jni, &packet, direct_buffer, offset, length, JNI_FALSE);
@@ -90,6 +118,9 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_output(JNIEnv *jni, jobject me, jlong instance, jobjectArray channels, jint length) {
 	vorbis_state_t* state = (vorbis_state_t*) instance;
+	if (state == NULL) {
+		return -1;
+	}
 	float** buffers;
 
 	size_t available = (size_t) vorbis_synthesis_pcmout(&state->dsp_state, &buffers);

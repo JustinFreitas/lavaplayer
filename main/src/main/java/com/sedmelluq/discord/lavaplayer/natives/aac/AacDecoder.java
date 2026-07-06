@@ -40,6 +40,22 @@ public class AacDecoder extends NativeResourceHolder {
     public AacDecoder() {
         library = AacDecoderLibrary.getInstance();
         instance = library.create(TRANSPORT_NONE);
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final AacDecoderLibrary library;
+        private final long instance;
+
+        Destroyer(AacDecoderLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
+        }
     }
 
     /**
@@ -241,10 +257,7 @@ public class AacDecoder extends NativeResourceHolder {
         );
     }
 
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
-    }
+
 
     /**
      * AAC stream information.

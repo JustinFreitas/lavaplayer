@@ -18,6 +18,22 @@ public class VorbisDecoder extends NativeResourceHolder {
     public VorbisDecoder() {
         library = VorbisDecoderLibrary.getInstance();
         instance = library.create();
+        registerCleanup(new Destroyer(library, instance));
+    }
+
+    private static class Destroyer implements Runnable {
+        private final VorbisDecoderLibrary library;
+        private final long instance;
+
+        Destroyer(VorbisDecoderLibrary library, long instance) {
+            this.library = library;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            library.destroy(instance);
+        }
     }
 
     /**
@@ -94,8 +110,5 @@ public class VorbisDecoder extends NativeResourceHolder {
         return result;
     }
 
-    @Override
-    protected void freeResources() {
-        library.destroy(instance);
-    }
+
 }

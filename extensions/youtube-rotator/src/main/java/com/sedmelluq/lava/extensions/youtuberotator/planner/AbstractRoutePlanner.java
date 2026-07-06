@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractRoutePlanner implements HttpRoutePlanner {
@@ -38,7 +38,7 @@ public abstract class AbstractRoutePlanner implements HttpRoutePlanner {
 
     protected AbstractRoutePlanner(final List<IpBlock> ipBlocks, final boolean handleSearchFailure) {
         this.ipBlock = new CombinedIpBlock(ipBlocks);
-        this.failingAddresses = new HashMap<>();
+        this.failingAddresses = new ConcurrentHashMap<>();
         this.schemePortResolver = DefaultSchemePortResolver.INSTANCE;
         this.handleSearchFailure = handleSearchFailure;
         log.info("Active RoutePlanner: {} using total of {} ips", getClass().getCanonicalName(), this.ipBlock.getSize());

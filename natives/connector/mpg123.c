@@ -51,6 +51,9 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
 	
 	unsigned char* input = (*jni)->GetDirectBufferAddress(jni, direct_input);
 	unsigned char* output = (*jni)->GetDirectBufferAddress(jni, direct_output);
+	if (input == NULL || output == NULL) {
+		return -1;
+	}
 	size_t used_bytes = 0;
 	
 	int result = mpg123_decode((void*) instance, input, (size_t) input_length, output, (size_t) output_length, &used_bytes);
