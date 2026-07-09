@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.6_28] - 2026-07-09
+* Upgraded native Opus to `1.6.1` and migrated its compilation system to CMake
+* Updated library `ch.qos.logback:logback-classic` to `1.5.38` (was `1.5.37`)
+
 ## [2.2.6_27] - 2026-07-05
 * Migrated `NativeResourceHolder` to use Java's `Cleaner` API, replacing deprecated `finalize()` and implementing `AutoCloseable` for `try-with-resources` support
 * Implemented automatic JNI binary cache directory cleanup in `NativeLibraryLoader` to prevent disk space leaks

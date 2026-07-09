@@ -15,7 +15,7 @@ REPORT_PATH = os.path.join(ROOT_DIR, "build", "dependencyUpdates", "report.json"
 # Pins and configurations
 NATIVE_REPOS = {
     # format: toml_key -> (github_owner_repo, use_releases_api, pin_version)
-    "opus": ("xiph/opus", True, "1.3.1"), # Pinned because later versions drop the VS solution
+    "opus": ("xiph/opus", False, None),
     "ogg": ("xiph/ogg", True, None),
     "vorbis": ("xiph/vorbis", True, None),
     "samplerate": ("libsndfile/libsamplerate", True, None),
