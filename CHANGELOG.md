@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.6_29] - 2026-07-09
+* Fix compile flags to force -fPIC on all compiled targets for Unix platforms (fixes Linux JNI linkage error)
+
 ## [2.2.6_28] - 2026-07-09
 * Upgraded native Opus to `1.6.1` and migrated its compilation system to CMake
 * Updated library `ch.qos.logback:logback-classic` to `1.5.38` (was `1.5.37`)
