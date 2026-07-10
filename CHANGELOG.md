@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.2.6_30] - 2026-07-09
+* Completed the event-listener deadlock fix in `DefaultAudioPlayer`: `handleTerminator` (natural track end) and `stopWithReason` now dispatch `TrackEndEvent` outside the `trackSwitchLock`, so consumer callbacks no longer run under the lock on the audio thread
+* `DefaultAudioPlayer` event dispatch now catches `Throwable` (was `Exception`), preventing a listener-thrown `Error` from killing the audio provide loop
+* Ogg/Opus seek table and stream length now use the fixed 48 kHz granule rate (RFC 7845) instead of the informational OpusHead input-rate field, fixing seek/duration accuracy for non-48 kHz sources
+* `NativeLibraryLoader` stale-directory cleanup now skips recently-created extraction directories, avoiding deletion of a concurrently-starting JVM's native libraries when the temp base is shared
+* Corrected the Opus encoder output-length bound in `opus.c` (`output_length - output_offset`) and removed an incorrect header include in `mpg123.c`
+
 ## [2.2.6_29] - 2026-07-09
 * Fix compile flags to force -fPIC on all compiled targets for Unix platforms (fixes Linux JNI linkage error)
 

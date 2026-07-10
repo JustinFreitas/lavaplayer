@@ -23,6 +23,11 @@ public class OggOpusCodecHandler implements OggCodecHandler {
     private static final int MAX_COMMENTS_SAVED_LENGTH = 1024 * 60; // 60 KB
     private static final int MAX_COMMENTS_READ_LENGTH = 1024 * 1024 * 120; // 120 MB
 
+    // RFC 7845: Ogg-Opus granule positions are always in units of 48 kHz samples, independent of the
+    // "input sample rate" field in OpusHead (which is informational only). Seek-table and length math
+    // must therefore use 48000, not the parsed header rate.
+    private static final int OPUS_GRANULE_SAMPLE_RATE = 48000;
+
     @Override
     public boolean isMatchingIdentifier(int identifier) {
         return identifier == OPUS_IDENTIFIER;
@@ -45,7 +50,7 @@ public class OggOpusCodecHandler implements OggCodecHandler {
 
         Map<String, String> tags = parseTags(broker.getBuffer(), broker.isTruncated());
 
-        stream.setSeekPoints(stream.createSeekTable(sampleRate));
+        stream.setSeekPoints(stream.createSeekTable(OPUS_GRANULE_SAMPLE_RATE));
         return new Blueprint(broker, channelCount, sampleRate, tags, headerGain);
     }
 
@@ -53,13 +58,12 @@ public class OggOpusCodecHandler implements OggCodecHandler {
     public OggMetadata loadMetadata(OggPacketInputStream stream, DirectBufferStreamBroker broker) throws IOException {
         ByteBuffer firstPacket = broker.getBuffer();
         verifyFirstPacket(firstPacket);
-        int sampleRate = getSampleRate(firstPacket);
 
         loadCommentsHeader(stream, broker);
 
         return new OggMetadata(
                 parseTags(broker.getBuffer(), broker.isTruncated()),
-                detectLength(stream, sampleRate));
+                detectLength(stream, OPUS_GRANULE_SAMPLE_RATE));
     }
 
     private Map<String, String> parseTags(ByteBuffer tagBuffer, boolean truncated) {

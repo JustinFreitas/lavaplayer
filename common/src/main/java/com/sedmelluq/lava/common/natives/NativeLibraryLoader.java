@@ -23,6 +23,10 @@ public class NativeLibraryLoader {
     private static final String DEFAULT_PROPERTY_PREFIX = "lava.native.";
     private static final String DEFAULT_RESOURCE_ROOT = "/natives/";
 
+    // Extraction directories are named after their creation time (currentTimeMillis). Only reap ones older
+    // than this, so a concurrently-starting JVM sharing the base directory isn't robbed of its fresh extract.
+    private static final long STALE_DIRECTORY_THRESHOLD_MS = 10 * 60 * 1000L; // 10 minutes
+
     private final String libraryName;
     private final Predicate<SystemType> systemFilter;
     private final NativeLibraryProperties properties;
@@ -163,18 +167,34 @@ public class NativeLibraryLoader {
             return;
         }
 
+        long now = System.currentTimeMillis();
+
         try (java.util.stream.Stream<Path> stream = Files.list(baseDir)) {
             stream.forEach(path -> {
-                if (Files.isDirectory(path)) {
-                    try {
-                        Long.parseLong(path.getFileName().toString());
-                        deleteDirectoryRecursively(path);
-                    } catch (NumberFormatException ignored) {
-                        // Ignore directories that don't match the timestamp naming pattern
-                    } catch (IOException e) {
-                        // Ignore files/directories that are locked or cannot be deleted
-                        log.trace("Failed to clean stale native library directory {}", path, e);
-                    }
+                if (!Files.isDirectory(path)) {
+                    return;
+                }
+
+                long timestamp;
+                try {
+                    timestamp = Long.parseLong(path.getFileName().toString());
+                } catch (NumberFormatException ignored) {
+                    // Ignore directories that don't match the timestamp naming pattern
+                    return;
+                }
+
+                // Skip recently-created directories: another JVM instance sharing this base directory may
+                // have just extracted its libraries there and not loaded them yet, so deleting them would
+                // break that process. Only reap directories comfortably older than any live startup.
+                if (now - timestamp < STALE_DIRECTORY_THRESHOLD_MS) {
+                    return;
+                }
+
+                try {
+                    deleteDirectoryRecursively(path);
+                } catch (IOException e) {
+                    // Ignore files/directories that are locked or cannot be deleted
+                    log.trace("Failed to clean stale native library directory {}", path, e);
                 }
             });
         } catch (IOException e) {

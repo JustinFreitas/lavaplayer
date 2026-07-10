@@ -1,11 +1,4 @@
 #include "connector.h"
-#include <aacdecoder_lib.h>
-
-#ifdef MSC_VER
-#define IMPORT __declspec(dllimport)
-#else
-#define IMPORT
-#endif
 
 CONNECTOR_IMPORT int mpg123_init(void);
 CONNECTOR_IMPORT void* mpg123_new(const char* decoder, int *error);

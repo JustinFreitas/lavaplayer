@@ -115,15 +115,21 @@ public class DefaultAudioPlayer implements AudioPlayer, TrackStateListener {
 
     private void stopWithReason(AudioTrackEndReason reason) {
         shadowTrack = null;
+        InternalAudioTrack previousTrack;
 
         synchronized (trackSwitchLock) {
-            InternalAudioTrack previousTrack = activeTrack;
+            previousTrack = activeTrack;
             activeTrack = null;
 
             if (previousTrack != null) {
                 previousTrack.stop();
-                dispatchEvent(new TrackEndEvent(this, previousTrack, reason));
             }
+        }
+
+        // Dispatch outside trackSwitchLock: listeners are user-supplied ("alien") code that may block or
+        // call back into the player, so running them under the lock risks stalls/deadlocks.
+        if (previousTrack != null) {
+            dispatchEvent(new TrackEndEvent(this, previousTrack, reason));
         }
     }
 
@@ -241,14 +247,25 @@ public class DefaultAudioPlayer implements AudioPlayer, TrackStateListener {
     }
 
     private void handleTerminator(InternalAudioTrack track) {
+        boolean shouldDispatch = false;
+        AudioTrackEndReason endReason = null;
+
         synchronized (trackSwitchLock) {
             if (activeTrack == track) {
-                try {
-                    activeTrack = null;
-                    dispatchEvent(new TrackEndEvent(this, track, track.getActiveExecutor().failedBeforeLoad() ? LOAD_FAILED : FINISHED));
-                } finally {
-                    track.stop();
-                }
+                activeTrack = null;
+                endReason = track.getActiveExecutor().failedBeforeLoad() ? LOAD_FAILED : FINISHED;
+                shouldDispatch = true;
+            }
+        }
+
+        // Dispatch outside trackSwitchLock: this runs on the audio thread on every natural track end, and the
+        // listener typically starts the next track. Holding the lock here would run alien code (and any
+        // control-plane call it blocks on) under the lock, stalling playback and control.
+        if (shouldDispatch) {
+            try {
+                dispatchEvent(new TrackEndEvent(this, track, endReason));
+            } finally {
+                track.stop();
             }
         }
     }
@@ -361,7 +378,7 @@ public class DefaultAudioPlayer implements AudioPlayer, TrackStateListener {
         for (AudioEventListener listener : listenersCopy) {
             try {
                 listener.onEvent(event);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("Handler of event {} threw an exception.", event, e);
             }
         }

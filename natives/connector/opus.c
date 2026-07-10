@@ -23,7 +23,7 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_opus
 
 	if (input == NULL || output == NULL) return -1;
 
-	return opus_encode((OpusEncoder*) instance, input + input_offset, frame_size, output + output_offset, output_length);
+	return opus_encode((OpusEncoder*) instance, input + input_offset, frame_size, output + output_offset, output_length - output_offset);
 }
 
 CONNECTOR_EXPORT void JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_destroy(JNIEnv *jni, jobject me, jlong instance) {
