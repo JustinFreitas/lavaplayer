@@ -23,7 +23,7 @@ val (gitVersion, release) = versionFromGit()
 logger.lifecycle("Version: $gitVersion (release: $release)")
 
 allprojects {
-    group = "com.github.justinfreitas"
+    group = "com.github.JustinFreitas.lavaplayer"
     version = gitVersion
 
     repositories {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 
 project(fdk-aac CXX)
 
@@ -18,7 +18,6 @@ endforeach()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_definitions(-Dinline=__inline)
-	set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 else()
 	add_definitions(-Wno-narrowing)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fdata-sections -ffunction-sections")

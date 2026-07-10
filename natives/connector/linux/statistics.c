@@ -33,7 +33,7 @@ static void read_process_stats(jlong* process_user, jlong* process_kernel) {
 			char* last_paren = strrchr(buffer, ')');
 			if (last_paren != NULL) {
 				int64_t user_time, kernel_time;
-				if (sscanf(last_paren + 2, "%*s %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d %"PRId64" %"PRId64, &user_time, &kernel_time) == 2) {
+				if (sscanf(last_paren + 2, "%*s %*s %*s %*s %*s %*s %*s %*s %*s %*s %*s %"PRId64" %"PRId64, &user_time, &kernel_time) == 2) {
 					*process_user = user_time;
 					*process_kernel = kernel_time;
 				}

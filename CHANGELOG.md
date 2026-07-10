@@ -1,5 +1,13 @@
 # Change Log
 
+## [2.2.6_31] - 2026-07-10
+* Added SHA-256 integrity checks for all downloaded native source archives to secure the build pipeline
+* Hardened native JNI connector binary flags with stack canaries, Control Flow Guard, fortify source, and read-only relocations
+* Enforced consistent static runtime linkage globally for all MSVC targets using CMP0091 and target properties, resolving MSVCRT conflicts
+* Fixed unquoted compiler ID check in `samplerate/CMakeLists.txt`
+* Wrapped check-and-clear logic for `clearOnInsert` in `AllocatingAudioFrameBuffer` in a synchronized block to guarantee thread safety
+* Aligned `PersistentHttpStream` status validation with standard stream contract by throwing `IOException` instead of `RuntimeException`
+
 ## [2.2.6_30] - 2026-07-09
 * Completed the event-listener deadlock fix in `DefaultAudioPlayer`: `handleTerminator` (natural track end) and `stopWithReason` now dispatch `TrackEndEvent` outside the `trackSwitchLock`, so consumer callbacks no longer run under the lock on the audio thread
 * `DefaultAudioPlayer` event dispatch now catches `Throwable` (was `Exception`), preventing a listener-thrown `Error` from killing the audio provide loop

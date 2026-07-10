@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(samplerate C)
 
-if(NOT ${CMAKE_C_COMPILER_ID} STREQUAL "MSVC")
+if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fdata-sections -ffunction-sections")
-else()
-	set(CMAKE_C_FLAGS_RELEASE "/MT")
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)

@@ -80,12 +80,12 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
         return true;
     }
 
-    private static boolean validateStatusCode(ClassicHttpResponse response, boolean returnOnServerError) {
+    private static boolean validateStatusCode(ClassicHttpResponse response, boolean returnOnServerError) throws IOException {
         int statusCode = response.getCode();
         if (returnOnServerError && statusCode >= HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return false;
         } else if (!isSuccessWithContent(statusCode)) {
-            throw new RuntimeException("Not success status code: " + statusCode);
+            throw new IOException("Not success status code: " + statusCode);
         }
         return true;
     }

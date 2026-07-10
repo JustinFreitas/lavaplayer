@@ -168,9 +168,11 @@ public class AllocatingAudioFrameBuffer extends AbstractAudioFrameBuffer {
         if (!locked) {
             receivedFrames = true;
 
-            if (clearOnInsert) {
-                audioFrames.clear();
-                clearOnInsert = false;
+            synchronized (synchronizer) {
+                if (clearOnInsert) {
+                    audioFrames.clear();
+                    clearOnInsert = false;
+                }
             }
 
             if (frame instanceof AbstractMutableAudioFrame) {

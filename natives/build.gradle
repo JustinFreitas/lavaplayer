@@ -19,6 +19,17 @@ ext.sampleRateVersion = libs.versions.samplerate.get()
 // https://github.com/mstorsjo/fdk-aac/tags
 ext.fdkAacVersion = libs.versions.fdk.aac.get()
 
+def verifyFileSha256(File file, String expectedHash) {
+    def digest = java.security.MessageDigest.getInstance("SHA-256")
+    file.eachByte(4096) { buffer, length ->
+        digest.update(buffer, 0, length)
+    }
+    def actualHash = digest.digest().encodeHex().toString()
+    if (!actualHash.equalsIgnoreCase(expectedHash)) {
+        throw new GradleException("SHA-256 verification failed for ${file.name}. Expected: ${expectedHash}, Actual: ${actualHash}")
+    }
+}
+
 tasks.register('load') {
     doLast {
         if (!file("$projectDir/samplerate/src").exists()) {
@@ -29,6 +40,8 @@ tasks.register('load') {
                 src "https://github.com/libsndfile/libsamplerate/archive/refs/tags/${sampleRateVersion}.tar.gz"
                 dest downloadPath
             }
+
+            verifyFileSha256(file(downloadPath), "16e881487f184250deb4fcb60432d7556ab12cb58caea71ef23960aec6c0405a")
 
             copy {
                 from tarTree(resources.gzip(downloadPath))
@@ -57,6 +70,8 @@ tasks.register('load') {
                 dest downloadPath
             }
 
+            verifyFileSha256(file(downloadPath), "8b73e924bd9f12ea0dd1d809e5acd6805e82dc184bc55e99f7964f6850e378ef")
+
             copy {
                 from zipTree(file(downloadPath))
                 into unpackPath
@@ -80,6 +95,8 @@ tasks.register('load') {
                 dest downloadPath
             }
 
+            verifyFileSha256(file(downloadPath), "e347b59c29e8f938bb48b2fda5da02f2d5d97316c004abaa76e171cf4a2fbdd7")
+
             copy {
                 from zipTree(file(downloadPath))
                 into "$projectDir/vorbis"
@@ -89,6 +106,8 @@ tasks.register('load') {
                 src "https://downloads.xiph.org/releases/vorbis/libvorbis-${vorbisVersion}.zip"
                 dest downloadPath
             }
+
+            verifyFileSha256(file(downloadPath), "57c8bc92d2741934b8dc939af49c2639edc44b8879cba2ec14ad3189e2814582")
 
             copy {
                 from zipTree(file(downloadPath))
@@ -104,6 +123,8 @@ tasks.register('load') {
                 dest downloadPath
             }
 
+            verifyFileSha256(file(downloadPath), "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1")
+
             copy {
                 from tarTree(file(downloadPath))
                 into "$projectDir/opus"
@@ -117,6 +138,8 @@ tasks.register('load') {
                 src "https://www.mpg123.de/download/mpg123-${mpg123Version}.tar.bz2"
                 dest downloadPath
             }
+
+            verifyFileSha256(file(downloadPath), "929a7c18ba662b8927aed4de229ad9ae8ab2b4806dd0f30b90113eb1b4e2195a")
 
             copy {
                 from tarTree(file(downloadPath))
