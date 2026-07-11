@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.6_33] - 2026-07-11
+* Added comprehensive unit tests for core engine components using Spock (OrderedExecutor, PersistentHttpStream, AllocatingAudioFrameBuffer, DefaultAudioPlayer)
+
 ## [2.2.6_32] - 2026-07-11
 * Released compiled version bump for JitPack compatibility and local builds
 
