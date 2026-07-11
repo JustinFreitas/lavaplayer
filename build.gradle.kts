@@ -46,6 +46,14 @@ subprojects {
 
     apply<JavaPlugin>()
     apply<MavenPublishPlugin>()
+    apply(plugin = "jacoco")
+
+    tasks.withType<JacocoReport> {
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+    }
 
     configure<JavaPluginExtension> {
         toolchain {

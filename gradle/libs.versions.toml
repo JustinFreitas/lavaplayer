@@ -33,6 +33,9 @@ commons-codec = "1.22.0"
 ben-manes-versions = "0.54.0"
 # https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
 junit-platform = "6.1.1"
+# Mocking classes in Spock
+bytebuddy = "1.18.11"
+objenesis = "3.4"
 # https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
 grgit = "5.3.3"
 # https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
@@ -69,6 +72,9 @@ groovy = { group = "org.apache.groovy", name = "groovy", version.ref = "groovy" 
 spock-core = { group = "org.spockframework", name = "spock-core", version.ref = "spock-core" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback-classic" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform" }
+byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
+byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
+objenesis = { group = "org.objenesis", name = "objenesis", version.ref = "objenesis" }
 
 [plugins]
 maven-publish-base = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish-plugin" }

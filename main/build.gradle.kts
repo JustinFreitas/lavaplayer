@@ -36,6 +36,9 @@ dependencies {
     testImplementation(libs.groovy)
     testImplementation(libs.spock.core)
     testImplementation(libs.logback.classic)
+    testImplementation(libs.byte.buddy)
+    testImplementation(libs.byte.buddy.agent)
+    testImplementation(libs.objenesis)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
