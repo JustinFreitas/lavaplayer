@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.6_32] - 2026-07-11
+* Updated library `tools.jackson.core:jackson-core` to `3.2.1` (was `3.2.0`)
+* Updated library `tools.jackson.core:jackson-databind` to `3.2.1` (was `3.2.0`)
+
 ## [2.2.6_31] - 2026-07-10
 * Added SHA-256 integrity checks for all downloaded native source archives to secure the build pipeline
 * Hardened native JNI connector binary flags with stack canaries, Control Flow Guard, fortify source, and read-only relocations
