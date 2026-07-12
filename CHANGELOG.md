@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.6_35] - 2026-07-11
+* Compiled Linux-x86-64 connector library on ubuntu-22.04 instead of ubuntu-latest, targeting an older glibc version (2.35) to resolve UnsatisfiedLinkErrors on JitPack and other older Linux build environments
+
 ## [2.2.6_34] - 2026-07-11
 * Fixed Darwin build compiler flags to allow clean native compilation on macOS
 * Rebuilt and updated native connector libraries for Windows, Linux, and macOS to match the 7-argument JNI signature for Opus codecs, resolving JVM SIGSEGV crashes
