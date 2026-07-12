@@ -75,13 +75,8 @@ jobs:
             -w /workspace \
             -e CMAKE_POLICY_VERSION_MINIMUM='3.5' \
             -e JAVA_HOME=/jdk \
-            -e PATH="/jdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             quay.io/pypa/manylinux2014_x86_64 \
-            ./gradlew :natives:compileNatives --no-daemon || {
-              echo "=== mpg123 config.log ==="
-              cat natives/mp3/mpg123-1.33.6/config.log || true
-              exit 1
-            }
+            bash -c 'export PATH="/jdk/bin:$PATH" && ./gradlew :natives:compileNatives --no-daemon'
 
       - name: Verify connector was produced
         shell: bash
