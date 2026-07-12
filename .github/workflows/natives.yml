@@ -54,10 +54,7 @@ jobs:
       # autotools the opus/ogg/mpg123 source builds invoke (./configure, make,
       # and `automake --version` for the mpg123 version-patching step).
       - name: Install build tools (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake build-essential automake autoconf libtool
+        if: false # No longer needed on host as we compile inside a docker container
 
       # macOS runners ship CMake but not the autotools the opus/ogg/mpg123
       # source builds invoke.
@@ -65,13 +62,27 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install automake autoconf libtool
 
-      - name: Build natives
+      - name: Build natives (Windows/macOS)
+        if: runner.os != 'Linux'
         # The bundled CMakeLists declare cmake_minimum_required(VERSION 3.15);
         # CMAKE_POLICY_VERSION_MINIMUM keeps CMake 4 runners from rejecting any
         # older minimums pulled in from downloaded codec sources.
         env:
           CMAKE_POLICY_VERSION_MINIMUM: '3.5'
         run: ./gradlew :natives:compileNatives --no-daemon
+
+      - name: Build natives (Linux via Docker manylinux)
+        if: runner.os == 'Linux'
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -v $JAVA_HOME:/jdk \
+            -w /workspace \
+            -e CMAKE_POLICY_VERSION_MINIMUM='3.5' \
+            -e JAVA_HOME=/jdk \
+            -e PATH="/jdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+            quay.io/pypa/manylinux2014_x86_64 \
+            ./gradlew :natives:compileNatives --no-daemon
 
       - name: Verify connector was produced
         shell: bash
