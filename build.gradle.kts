@@ -22,6 +22,14 @@ tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val (gitVersion, release) = versionFromGit()
 logger.lifecycle("Version: $gitVersion (release: $release)")
 
+try {
+    val process = ProcessBuilder("ldd", "--version").start()
+    val output = process.inputStream.bufferedReader().readText()
+    logger.lifecycle("JitPack ldd --version: $output")
+} catch (e: Exception) {
+    logger.lifecycle("Failed to run ldd: ${e.message}")
+}
+
 allprojects {
     group = "com.github.JustinFreitas.lavaplayer"
     version = gitVersion
