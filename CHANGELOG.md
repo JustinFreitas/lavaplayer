@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.6_34] - 2026-07-11
+* Fixed Darwin build compiler flags to allow clean native compilation on macOS
+* Rebuilt and updated native connector libraries for Windows, Linux, and macOS to match the 7-argument JNI signature for Opus codecs, resolving JVM SIGSEGV crashes
+* Restored native Opus round-trip and MP3 header-parsing unit tests
+
 ## [2.2.6_33] - 2026-07-11
 * Added comprehensive unit tests for core engine components using Spock (OrderedExecutor, PersistentHttpStream, AllocatingAudioFrameBuffer, DefaultAudioPlayer)
 
