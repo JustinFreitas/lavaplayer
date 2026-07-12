@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.6_36] - 2026-07-11
+* Compiled Linux-x86-64 connector library inside a manylinux2014 Docker container on GHA, targeting glibc 2.17 to resolve UnsatisfiedLinkErrors on older Linux environments (such as JitPack's Ubuntu 16.04 builder)
+
 ## [2.2.6_35] - 2026-07-11
 * Compiled Linux-x86-64 connector library on ubuntu-22.04 instead of ubuntu-latest, targeting an older glibc version (2.35) to resolve UnsatisfiedLinkErrors on JitPack and other older Linux build environments
 
