@@ -29,7 +29,7 @@ jobs:
           - os: windows-latest
             identifier: win-x86-64
             library: connector.dll
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             identifier: linux-x86-64
             library: libconnector.so
           - os: macos-latest
