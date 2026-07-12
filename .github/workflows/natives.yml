@@ -50,11 +50,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Windows and macOS runners ship CMake; on Linux install it along with the
-      # autotools the opus/ogg/mpg123 source builds invoke (./configure, make,
-      # and `automake --version` for the mpg123 version-patching step).
-      - name: Install build tools (Linux)
-        if: false # No longer needed on host as we compile inside a docker container
 
       # macOS runners ship CMake but not the autotools the opus/ogg/mpg123
       # source builds invoke.
