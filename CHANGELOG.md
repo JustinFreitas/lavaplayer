@@ -1,5 +1,11 @@
 # Change Log
 
+## [2.2.6_37] - 2026-07-13
+* Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
+* Updated library `org.objenesis:objenesis` to `3.5` (was `3.4`)
+* Updated library `tools.jackson.core:jackson-core` to `3.2.1` (was `3.2.0`)
+* Updated library `tools.jackson.core:jackson-databind` to `3.2.1` (was `3.2.0`)
+
 ## [2.2.7_1] - 2026-07-12
 * Merged upstream 2.2.7 bug fixes:
   * Fixed Ogg playback position being set to 0 on seek
