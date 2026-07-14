@@ -1,6 +1,7 @@
 # Change Log
 
-## [2.2.6_37] - 2026-07-13
+## [2.2.7_2] - 2026-07-13
+* Fixed bug in Dependency Autopilot version calculation when higher semver base versions had lower suffixes
 * Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
 * Updated library `org.objenesis:objenesis` to `3.5` (was `3.4`)
 * Updated library `tools.jackson.core:jackson-core` to `3.2.1` (was `3.2.0`)
