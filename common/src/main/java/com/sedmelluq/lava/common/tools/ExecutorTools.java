@@ -87,7 +87,7 @@ public class ExecutorTools {
         @Override
         public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
             if (!((EagerlyScalingTaskQueue) executor.getQueue()).offerDirectly(runnable)) {
-                throw new RejectedExecutionException("Task " + runnable.toString() + " rejected from " + runnable.toString());
+                throw new RejectedExecutionException("Task " + runnable.toString() + " rejected from " + executor.toString());
             }
         }
     }

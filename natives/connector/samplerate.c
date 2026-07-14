@@ -22,6 +22,10 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samp
 		jfloatArray in_array, jint in_offset, jint in_length, jfloatArray out_array, jint out_offset, jint out_length, jboolean end_of_input,
 		jdouble source_ratio, jintArray progress_array) {
 
+	if (instance == 0) {
+		return -1;
+	}
+
 	jsize in_len = (*jni)->GetArrayLength(jni, in_array);
 	jsize out_len = (*jni)->GetArrayLength(jni, out_array);
 
@@ -35,7 +39,16 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samp
 	}
 
 	float* in = (*jni)->GetPrimitiveArrayCritical(jni, in_array, NULL);
+	if (in == NULL) {
+		// OutOfMemoryError is already pending
+		return -1;
+	}
+
 	float* out = (*jni)->GetPrimitiveArrayCritical(jni, out_array, NULL);
+	if (out == NULL) {
+		(*jni)->ReleasePrimitiveArrayCritical(jni, in_array, in, JNI_ABORT);
+		return -1;
+	}
 
 	SRC_DATA data;
 	data.data_in = &in[in_offset];

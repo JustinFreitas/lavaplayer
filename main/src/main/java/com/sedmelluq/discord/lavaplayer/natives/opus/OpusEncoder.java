@@ -2,6 +2,7 @@ package com.sedmelluq.discord.lavaplayer.natives.opus;
 
 import com.sedmelluq.lava.common.natives.NativeResourceHolder;
 
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -59,7 +60,15 @@ public class OpusEncoder extends NativeResourceHolder {
         }
 
         directOutput.clear();
-        int result = library.encode(instance, directInput, directInput.position(), frameSize, directOutput, directOutput.position(), directOutput.capacity());
+
+        int result;
+        try {
+            result = library.encode(instance, directInput, directInput.position(), frameSize, directOutput, directOutput.position(), directOutput.capacity());
+        } finally {
+            // Keeps this object reachable for the duration of the native call, otherwise the Cleaner
+            // may destroy the native encoder while it is still executing.
+            Reference.reachabilityFence(this);
+        }
 
         if (result < 0) {
             throw new IllegalStateException("Encoding failed with error " + result);

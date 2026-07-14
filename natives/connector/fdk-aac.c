@@ -51,5 +51,9 @@ CONNECTOR_EXPORT jlong JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac
 	}
 
 	CStreamInfo* stream_info = aacDecoder_GetStreamInfo(handle);
+	if (stream_info == NULL) {
+		return 0;
+	}
+
 	return ((jlong) stream_info->sampleRate) << 32LL | ((jlong) stream_info->frameSize) << 16 | ((jlong) stream_info->numChannels);
 }

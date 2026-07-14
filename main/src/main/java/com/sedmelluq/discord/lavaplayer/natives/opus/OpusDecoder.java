@@ -2,6 +2,7 @@ package com.sedmelluq.discord.lavaplayer.natives.opus;
 
 import com.sedmelluq.lava.common.natives.NativeResourceHolder;
 
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -64,7 +65,15 @@ public class OpusDecoder extends NativeResourceHolder {
         }
 
         directOutput.clear();
-        int result = library.decode(instance, directInput, directInput.position(), directInput.remaining(), directOutput, directOutput.position(), directOutput.remaining() / channels);
+
+        int result;
+        try {
+            result = library.decode(instance, directInput, directInput.position(), directInput.remaining(), directOutput, directOutput.position(), directOutput.remaining() / channels);
+        } finally {
+            // Keeps this object reachable for the duration of the native call, otherwise the Cleaner
+            // may destroy the native decoder while it is still executing.
+            Reference.reachabilityFence(this);
+        }
 
         if (result < 0) {
             throw new IllegalStateException("Decoding failed with error " + result);

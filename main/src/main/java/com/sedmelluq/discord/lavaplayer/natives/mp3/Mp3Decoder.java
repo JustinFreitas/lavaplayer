@@ -4,6 +4,7 @@ import com.sedmelluq.lava.common.natives.NativeResourceHolder;
 
 import java.util.Arrays;
 
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -64,10 +65,17 @@ public class Mp3Decoder extends NativeResourceHolder {
             throw new IllegalArgumentException("Arguments must be direct buffers.");
         }
 
-        int result = library.decode(instance, directInput, directInput.remaining(), directOutput, directOutput.remaining() * 2);
+        int result;
+        try {
+            result = library.decode(instance, directInput, directInput.remaining(), directOutput, directOutput.remaining() * 2);
 
-        while (result == ERROR_NEW_FORMAT) {
-            result = library.decode(instance, directInput, 0, directOutput, directOutput.remaining() * 2);
+            while (result == ERROR_NEW_FORMAT) {
+                result = library.decode(instance, directInput, 0, directOutput, directOutput.remaining() * 2);
+            }
+        } finally {
+            // Keeps this object reachable for the duration of the native calls, otherwise the Cleaner
+            // may destroy the native decoder while it is still executing.
+            Reference.reachabilityFence(this);
         }
 
         if (result == ERROR_NEED_MORE) {

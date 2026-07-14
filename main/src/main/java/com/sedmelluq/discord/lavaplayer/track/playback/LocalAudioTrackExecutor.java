@@ -442,7 +442,7 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
             return true;
         }
 
-        return true;
+        return false;
     }
 
     private void processProvidedFrame(AudioFrame frame) {

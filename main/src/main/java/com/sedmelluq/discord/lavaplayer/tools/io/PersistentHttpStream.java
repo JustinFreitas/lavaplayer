@@ -128,6 +128,15 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
                     currentResponse = null;
                     return false;
                 }
+
+                // A 200 response to a range request means the server ignored the Range header and is sending
+                // the resource from the start - continuing would silently read from the wrong position. Only
+                // enforced for seekable (known-length) content: live streams reconnect at the live edge with
+                // a 200 by design.
+                if (position > 0 && useHeadersForRange() && canSeekHard()
+                        && currentResponse.getCode() == HttpStatus.SC_OK) {
+                    throw new IOException("Server did not respect Range header, returned 200 instead of 206.");
+                }
             } catch (Exception e) {
                 currentResponse.close();
                 currentResponse = null;

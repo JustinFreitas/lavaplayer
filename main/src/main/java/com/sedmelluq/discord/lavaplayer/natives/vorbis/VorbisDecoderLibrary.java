@@ -18,8 +18,14 @@ class VorbisDecoderLibrary {
 
     native void destroy(long instance);
 
-    native boolean initialise(long instance, ByteBuffer infoBuffer, int infoOffset, int infoLength,
-                              ByteBuffer setupBuffer, int setupOffset, int setupLength);
+    /**
+     * @return 1 (JNI_TRUE) on success. Any other value is a failure: 0, or a libvorbis error code
+     * combined with a flag indicating which header failed. Declared as int because the native
+     * implementation returns a jint - declaring it boolean would make the JVM keep only the lowest
+     * byte, which is non-zero for most libvorbis error codes, silently turning failures into successes.
+     */
+    native int initialise(long instance, ByteBuffer infoBuffer, int infoOffset, int infoLength,
+                          ByteBuffer setupBuffer, int setupOffset, int setupLength);
 
     native int getChannelCount(long instance);
 

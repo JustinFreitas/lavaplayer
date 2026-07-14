@@ -2,6 +2,8 @@ package com.sedmelluq.discord.lavaplayer.natives.samplerate;
 
 import com.sedmelluq.lava.common.natives.NativeResourceHolder;
 
+import java.lang.ref.Reference;
+
 /**
  * Sample rate converter backed by libsamplerate
  */
@@ -49,7 +51,13 @@ public class SampleRateConverter extends NativeResourceHolder {
     public void reset() {
         checkNotReleased();
 
-        library.reset(instance);
+        try {
+            library.reset(instance);
+        } finally {
+            // Keeps this object reachable for the duration of the native call, otherwise the Cleaner
+            // may destroy the native converter while it is still executing.
+            Reference.reachabilityFence(this);
+        }
     }
 
     /**
@@ -65,7 +73,12 @@ public class SampleRateConverter extends NativeResourceHolder {
     public void process(float[] input, int inputOffset, int inputLength, float[] output, int outputOffset, int outputLength, boolean endOfInput, Progress progress) {
         checkNotReleased();
 
-        int error = library.process(instance, input, inputOffset, inputLength, output, outputOffset, outputLength, endOfInput, ratio, progress.fields);
+        int error;
+        try {
+            error = library.process(instance, input, inputOffset, inputLength, output, outputOffset, outputLength, endOfInput, ratio, progress.fields);
+        } finally {
+            Reference.reachabilityFence(this);
+        }
 
         if (error != 0) {
             throw new RuntimeException("Failed to convert sample rate, error " + error + ".");

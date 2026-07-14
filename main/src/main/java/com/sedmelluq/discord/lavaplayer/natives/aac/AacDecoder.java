@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A wrapper around the native methods of AacDecoder, which uses fdk-aac native library. Supports data with no transport
@@ -40,7 +41,9 @@ public class AacDecoder extends NativeResourceHolder {
     private static final int DECODE_ERROR_END = 0x4FFF;
 
     private final AacDecoderLibrary library;
-    private long instance;
+    // Shared with the cleanup action: resetInstance() replaces the native handle, so the cleaner
+    // must always read the current value instead of one captured at construction.
+    private final AtomicLong instance;
     private Long lastConfig;
 
     /**
@@ -48,22 +51,26 @@ public class AacDecoder extends NativeResourceHolder {
      */
     public AacDecoder() {
         library = AacDecoderLibrary.getInstance();
-        instance = library.create(TRANSPORT_NONE);
+        instance = new AtomicLong(library.create(TRANSPORT_NONE));
         registerCleanup(new Destroyer(library, instance));
     }
 
     private static class Destroyer implements Runnable {
         private final AacDecoderLibrary library;
-        private final long instance;
+        private final AtomicLong instance;
 
-        Destroyer(AacDecoderLibrary library, long instance) {
+        Destroyer(AacDecoderLibrary library, AtomicLong instance) {
             this.library = library;
             this.instance = instance;
         }
 
         @Override
         public void run() {
-            library.destroy(instance);
+            long handle = instance.getAndSet(0);
+
+            if (handle != 0) {
+                library.destroy(handle);
+            }
         }
     }
 
@@ -128,7 +135,7 @@ public class AacDecoder extends NativeResourceHolder {
         }
 
         lastConfig = buffer;
-        return library.configure(instance, buffer);
+        return library.configure(instance.get(), buffer);
     }
 
     private static boolean isSbrOrPs(int objectType) {
@@ -202,7 +209,7 @@ public class AacDecoder extends NativeResourceHolder {
             throw new IllegalArgumentException("Buffer argument must be a direct buffer.");
         }
 
-        int readBytes = library.fill(instance, buffer, buffer.position(), buffer.limit());
+        int readBytes = library.fill(instance.get(), buffer, buffer.position(), buffer.limit());
         if (readBytes < 0) {
             throw new IllegalStateException("Filling decoder failed with error " + (-readBytes));
         }
@@ -230,7 +237,7 @@ public class AacDecoder extends NativeResourceHolder {
             throw new IllegalArgumentException("Buffer argument must be a direct buffer.");
         }
 
-        int result = library.decode(instance, buffer, buffer.capacity(), flush);
+        int result = library.decode(instance.get(), buffer, buffer.capacity(), flush);
 
         if (result == 0) {
             return true;
@@ -247,11 +254,11 @@ public class AacDecoder extends NativeResourceHolder {
     }
 
     private void resetInstance() {
-        library.destroy(instance);
-        instance = library.create(TRANSPORT_NONE);
+        library.destroy(instance.get());
+        instance.set(library.create(TRANSPORT_NONE));
 
         if (lastConfig != null) {
-            library.configure(instance, lastConfig);
+            library.configure(instance.get(), lastConfig);
         }
     }
 
@@ -264,7 +271,7 @@ public class AacDecoder extends NativeResourceHolder {
     public synchronized StreamInfo resolveStreamInfo() {
         checkNotReleased();
 
-        int result = library.decode(instance, NO_BUFFER, 0, false);
+        int result = library.decode(instance.get(), NO_BUFFER, 0, false);
 
         if (result == ERROR_NOT_ENOUGH_BITS) {
             return null;
@@ -272,7 +279,7 @@ public class AacDecoder extends NativeResourceHolder {
             throw new IllegalStateException("Expected decoding to halt, got: " + result);
         }
 
-        long combinedValue = library.getStreamInfo(instance);
+        long combinedValue = library.getStreamInfo(instance.get());
         if (combinedValue == 0) {
             throw new IllegalStateException("Native library failed to detect stream info.");
         }

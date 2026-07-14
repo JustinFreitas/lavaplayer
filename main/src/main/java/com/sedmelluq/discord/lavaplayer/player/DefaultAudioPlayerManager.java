@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -72,7 +71,8 @@ public final class DefaultAudioPlayerManager implements AudioPlayerManager {
      * Create a new instance
      */
     public DefaultAudioPlayerManager() {
-        sourceManagers = new ArrayList<>();
+        // Copy-on-write so loader threads can iterate safely while sources are still being registered.
+        sourceManagers = new CopyOnWriteArrayList<>();
 
         // Executors
         trackPlaybackExecutorService = new ThreadPoolExecutor(1, 2048, 10, TimeUnit.SECONDS,

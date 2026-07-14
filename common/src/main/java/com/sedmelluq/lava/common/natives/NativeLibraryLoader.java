@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.security.SecureRandom;
 import java.util.function.Predicate;
 
 import static java.nio.file.attribute.PosixFilePermissions.asFileAttribute;
@@ -23,9 +24,12 @@ public class NativeLibraryLoader {
     private static final String DEFAULT_PROPERTY_PREFIX = "lava.native.";
     private static final String DEFAULT_RESOURCE_ROOT = "/natives/";
 
-    // Extraction directories are named after their creation time (currentTimeMillis). Only reap ones older
-    // than this, so a concurrently-starting JVM sharing the base directory isn't robbed of its fresh extract.
+    // Extraction directories are named after their creation time (currentTimeMillis) plus a random
+    // suffix. Only reap ones older than this, so a concurrently-starting JVM sharing the base
+    // directory isn't robbed of its fresh extract.
     private static final long STALE_DIRECTORY_THRESHOLD_MS = 10 * 60 * 1000L; // 10 minutes
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final String libraryName;
     private final Predicate<SystemType> systemFilter;
@@ -142,21 +146,26 @@ public class NativeLibraryLoader {
         Path baseDir = detectExtractionBaseDirectory();
         cleanStaleDirectories(baseDir);
 
-        Path extractionDirectory = baseDir.resolve(String.valueOf(System.currentTimeMillis()));
+        // Unpredictable, owner-only directory: the library is loaded with System.load() from here, so
+        // on a shared system a predictable or world-writable path would let another local user plant
+        // or swap the binary between extraction and load.
+        Path extractionDirectory = baseDir.resolve(System.currentTimeMillis() + "-" + Long.toHexString(RANDOM.nextLong()));
 
-        if (!Files.isDirectory(extractionDirectory)) {
-            log.debug("Native library {}: extraction directory {} does not exist, creating.", libraryName,
-                extractionDirectory);
+        log.debug("Native library {}: using extraction directory {}.", libraryName, extractionDirectory);
 
+        try {
+            createPrivateDirectories(extractionDirectory);
+        } catch (IOException e) {
+            // The shared base directory may have been created by another user and not be writable for
+            // us - fall back to a private directory directly under the temp directory.
             try {
-                createDirectoriesWithFullPermissions(extractionDirectory);
-            } catch (FileAlreadyExistsException ignored) {
-                // All is well
-            } catch (IOException e) {
-                throw new IOException("Failed to create directory for unpacked native library.", e);
+                Path fallback = Files.createTempDirectory("lava-jni-natives-");
+                log.debug("Native library {}: falling back to extraction directory {}.", libraryName, fallback);
+                return fallback;
+            } catch (IOException fallbackException) {
+                fallbackException.addSuppressed(e);
+                throw new IOException("Failed to create directory for unpacked native library.", fallbackException);
             }
-        } else {
-            log.debug("Native library {}: extraction directory {} already exists, using.", libraryName, extractionDirectory);
         }
 
         return extractionDirectory;
@@ -175,9 +184,13 @@ public class NativeLibraryLoader {
                     return;
                 }
 
+                // Directory names are "<timestamp>" (legacy) or "<timestamp>-<random>".
+                String name = path.getFileName().toString();
+                int separator = name.indexOf('-');
+
                 long timestamp;
                 try {
-                    timestamp = Long.parseLong(path.getFileName().toString());
+                    timestamp = Long.parseLong(separator >= 0 ? name.substring(0, separator) : name);
                 } catch (NumberFormatException ignored) {
                     // Ignore directories that don't match the timestamp naming pattern
                     return;
@@ -250,13 +263,13 @@ public class NativeLibraryLoader {
         return systemType;
     }
 
-    private static void createDirectoriesWithFullPermissions(Path path) throws IOException {
+    private static void createPrivateDirectories(Path path) throws IOException {
         boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
         if (!isPosix) {
             Files.createDirectories(path);
         } else {
-            Files.createDirectories(path, asFileAttribute(fromString("rwxrwxrwx")));
+            Files.createDirectories(path, asFileAttribute(fromString("rwx------")));
         }
     }
 

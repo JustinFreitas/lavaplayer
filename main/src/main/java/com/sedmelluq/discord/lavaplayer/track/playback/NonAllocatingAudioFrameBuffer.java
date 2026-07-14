@@ -203,6 +203,8 @@ public class NonAllocatingAudioFrameBuffer extends AbstractAudioFrameBuffer {
     public void clear() {
         synchronized (synchronizer) {
             frameCount = 0;
+            // Wake up a producer blocked in consume() waiting for space.
+            synchronizer.notifyAll();
         }
     }
 

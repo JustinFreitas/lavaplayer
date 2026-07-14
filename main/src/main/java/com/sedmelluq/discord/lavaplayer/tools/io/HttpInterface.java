@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * An HTTP interface for performing HTTP requests in one specific thread. This also means it is not thread safe and should
@@ -24,7 +25,7 @@ public class HttpInterface implements Closeable {
     private final boolean ownedClient;
     private final HttpContextFilter filter;
     private ClassicHttpRequest lastRequest;
-    private boolean available;
+    private final AtomicBoolean available;
 
     /**
      * @param client      The http client instance used.
@@ -39,7 +40,7 @@ public class HttpInterface implements Closeable {
         this.context = context;
         this.ownedClient = ownedClient;
         this.filter = filter;
-        this.available = true;
+        this.available = new AtomicBoolean(true);
     }
 
     /**
@@ -48,12 +49,11 @@ public class HttpInterface implements Closeable {
      * @return True if this instance was not exclusively used when this method was called.
      */
     public boolean acquire() {
-        if (!available) {
+        if (!available.compareAndSet(true, false)) {
             return false;
         }
 
         filter.onContextOpen(context);
-        available = false;
         return true;
     }
 
@@ -109,10 +109,10 @@ public class HttpInterface implements Closeable {
             return redirectLocations.get(redirectLocations.size() - 1);
         } else {
             try {
-            return lastRequest != null ? lastRequest.getUri() : null;
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+                return lastRequest != null ? lastRequest.getUri() : null;
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -132,12 +132,27 @@ public class HttpInterface implements Closeable {
 
     @Override
     public void close() throws IOException {
-        available = true;
+        // Idempotent: a second close must not run the close hooks again, otherwise a pooling
+        // manager would recycle the same instance twice and hand it out to two threads at once.
+        if (!available.compareAndSet(false, true)) {
+            return;
+        }
+
         filter.onContextClose(context);
 
         if (ownedClient) {
             client.close();
         }
+
+        onClosed();
+    }
+
+    /**
+     * Called once per successful close, after the context has been closed. Managers may override
+     * this to recycle the instance.
+     */
+    protected void onClosed() {
+
     }
 }
 
