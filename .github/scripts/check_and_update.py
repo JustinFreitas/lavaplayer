@@ -90,19 +90,23 @@ def get_next_version():
         tags_output = []
 
     pattern = re.compile(r'^v?(\d+\.\d+\.\d+)_(\d+)$')
-    highest_suffix = -1
-    base_version = "2.2.6"
-    
+    parsed_tags = []
     for tag in tags_output:
         match = pattern.match(tag)
         if match:
             b_ver, suffix_str = match.groups()
             suffix = int(suffix_str)
-            if suffix > highest_suffix:
-                highest_suffix = suffix
-                base_version = b_ver
+            try:
+                ver_tuple = tuple(int(x) for x in b_ver.split('.'))
+                parsed_tags.append((ver_tuple, b_ver, suffix))
+            except ValueError:
+                continue
                 
-    if highest_suffix != -1:
+    if parsed_tags:
+        parsed_tags.sort(key=lambda x: (x[0], x[2]))
+        highest = parsed_tags[-1]
+        base_version = highest[1]
+        highest_suffix = highest[2]
         return f"v{base_version}_{highest_suffix + 1}"
     else:
         return "v2.2.6_24"
