@@ -6,7 +6,7 @@ commons-io = "2.22.0"
 # https://mvnrepository.com/artifact/org.jetbrains/annotations
 intellij-annotations = "26.1.0"
 # https://mvnrepository.com/artifact/tools.jackson.core/jackson-core
-jackson = "3.2.0"
+jackson = "3.2.1"
 # https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5
 httpclient = "5.6.2"
 # https://mvnrepository.com/artifact/org.jsoup/jsoup
@@ -32,10 +32,10 @@ commons-codec = "1.22.0"
 # https://github.com/ben-manes/gradle-versions-plugin
 ben-manes-versions = "0.54.0"
 # https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
-junit-platform = "6.1.1"
+junit-platform = "6.1.2"
 # Mocking classes in Spock
 bytebuddy = "1.18.11"
-objenesis = "3.4"
+objenesis = "3.5"
 # https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
 grgit = "5.3.3"
 # https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
