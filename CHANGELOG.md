@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.7_4] - 2026-07-21
+* Updated library `org.json:json` to `20260719` (was `20260522`)
+
 ## [2.2.7_2] - 2026-07-13
 * Fixed bug in Dependency Autopilot version calculation when higher semver base versions had lower suffixes
 * Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
