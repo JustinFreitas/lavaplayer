@@ -62,6 +62,18 @@ public abstract class AudioEventAdapter implements AudioEventListener {
         onTrackStuck(player, track, thresholdMs);
     }
 
+    /**
+     * Called once the ReplayGain state of a track is known, which is after {@link #onTrackStart} but still before any
+     * audio has been decoded. Fired for every track, with a null gain for tracks that carry no ReplayGain data.
+     *
+     * @param player Audio player
+     * @param track  Audio track whose ReplayGain state was resolved
+     * @param gainDb Applied gain in decibels, or null if none
+     */
+    public void onTrackReplayGainResolved(AudioPlayer player, AudioTrack track, Float gainDb) {
+        // Adapter dummy method
+    }
+
     @Override
     public void onEvent(AudioEvent event) {
         if (event instanceof PlayerPauseEvent) {
@@ -77,6 +89,9 @@ public abstract class AudioEventAdapter implements AudioEventListener {
         } else if (event instanceof TrackStuckEvent) {
             TrackStuckEvent stuck = (TrackStuckEvent) event;
             onTrackStuck(event.player, stuck.track, stuck.thresholdMs, stuck.stackTrace);
+        } else if (event instanceof TrackReplayGainResolvedEvent) {
+            TrackReplayGainResolvedEvent resolved = (TrackReplayGainResolvedEvent) event;
+            onTrackReplayGainResolved(event.player, resolved.track, resolved.gainDb);
         }
     }
 }

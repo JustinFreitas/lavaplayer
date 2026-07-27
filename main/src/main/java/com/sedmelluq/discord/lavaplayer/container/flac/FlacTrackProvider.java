@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.container.flac;
 
+import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.flac.frame.FlacFrameReader;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipeline;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipelineFactory;
@@ -62,22 +63,7 @@ public class FlacTrackProvider {
             return 1.0f;
         }
 
-        String replayGainTag = info.tags.get("REPLAYGAIN_TRACK_GAIN");
-        if (replayGainTag == null) {
-            return 1.0f;
-        }
-
-        try {
-            // Tag format example: "-5.0 dB" or "+2.5 dB"
-            String cleanValue = replayGainTag.replace("dB", "").trim();
-            float gainDb = Float.parseFloat(cleanValue);
-            float multiplier = (float) Math.pow(10, gainDb / 20.0f);
-            log.debug("Applying ReplayGain: {} dB -> {}x multiplier", gainDb, multiplier);
-            return multiplier;
-        } catch (NumberFormatException e) {
-            log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
-            return 1.0f;
-        }
+        return ReplayGainTools.resolveMultiplier(info.tags, 0.0f, "FLAC");
     }
 
     /**

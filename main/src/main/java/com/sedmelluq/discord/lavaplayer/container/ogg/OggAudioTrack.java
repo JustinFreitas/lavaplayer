@@ -4,7 +4,6 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.io.SeekableInputStream;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BaseAudioTrack;
-import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
 import com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +46,14 @@ public class OggAudioTrack extends BaseAudioTrack {
 
         OggTrackHandler handler = blueprint.loadTrackHandler(packetInputStream);
         AtomicBoolean initialised = new AtomicBoolean(false);
+
+        // Unlike the other containers, OGG only learns its gain once the handler is initialised inside the read
+        // loop, so it reports for itself rather than letting the executor report null on entry.
+        localExecutor.deferReplayGainReport();
+
         localExecutor.executeProcessingLoop(() -> {
             try {
-                processTrackLoop(packetInputStream, localExecutor.getProcessingContext(), handler, blueprint, initialised);
+                processTrackLoop(packetInputStream, localExecutor, handler, blueprint, initialised);
             } catch (IOException e) {
                 throw new FriendlyException("Stream broke when playing OGG track.", SUSPICIOUS, e);
             }
@@ -57,20 +61,24 @@ public class OggAudioTrack extends BaseAudioTrack {
     }
 
     private void processTrackLoop(OggPacketInputStream packetInputStream,
-                                  AudioProcessingContext context,
+                                  LocalAudioTrackExecutor localExecutor,
                                   OggTrackHandler handler,
                                   OggTrackBlueprint blueprint,
                                   AtomicBoolean initialised) throws IOException, InterruptedException {
         while (blueprint != null) {
             // fix: only initialise once to avoid resetting the reported playback position
             if (initialised.compareAndSet(false, true)) {
-                handler.initialise(context, 0, 0);
+                handler.initialise(localExecutor.getProcessingContext(), 0, 0);
 
                 Float gainDb = handler.getReplayGainDb();
                 if (gainDb != null) {
                     this.replayGainApplied = true;
                     this.replayGainDb = gainDb;
                 }
+
+                // Only the first stream in the chain is reported (the executor ignores later calls); chained
+                // sub-streams still update replayGainDb for anything reading it directly.
+                localExecutor.notifyReplayGainResolved(gainDb);
             }
 
             handler.provideFrames();

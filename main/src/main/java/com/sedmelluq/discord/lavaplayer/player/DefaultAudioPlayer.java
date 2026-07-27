@@ -394,6 +394,15 @@ public class DefaultAudioPlayer implements AudioPlayer, TrackStateListener {
         dispatchEvent(new TrackStuckEvent(this, track, thresholdMs, null));
     }
 
+    @Override
+    public void onTrackReplayGainResolved(AudioTrack track, Float gainDb) {
+        // Only report for the track that is actually active - a track being stopped can still resolve ReplayGain on
+        // its way out, and a stale report would let a listener apply volume meant for a track that is already gone.
+        if (activeTrack == track) {
+            dispatchEvent(new TrackReplayGainResolvedEvent(this, track, gainDb));
+        }
+    }
+
     /**
      * Check if the player should be "cleaned up" - stopped due to nothing using it, with the given threshold.
      *

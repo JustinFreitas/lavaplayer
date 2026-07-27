@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.container.matroska;
 
+import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.matroska.format.MatroskaFileTrack;
 import com.sedmelluq.discord.lavaplayer.container.matroska.format.MatroskaFileTrack.AudioDetails;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipeline;
@@ -50,34 +51,7 @@ public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
     }
 
     private float resolveVolumeMultiplier(Map<String, String> tags) {
-        float totalGainDb = 0.0f;
-
-        String r128GainTag = tags.get("R128_TRACK_GAIN");
-        String replayGainTag = tags.get("REPLAYGAIN_TRACK_GAIN");
-
-        if (r128GainTag != null) {
-            try {
-                int r128Gain = Integer.parseInt(r128GainTag);
-                totalGainDb += r128Gain / 256.0f;
-            } catch (NumberFormatException e) {
-                 log.warn("Invalid R128_TRACK_GAIN tag value: {}", r128GainTag);
-            }
-        } else if (replayGainTag != null) {
-            try {
-                String cleanValue = replayGainTag.replace("dB", "").trim();
-                totalGainDb += Float.parseFloat(cleanValue);
-            } catch (NumberFormatException e) {
-                log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
-            }
-        }
-
-        if (totalGainDb != 0.0f) {
-            float multiplier = (float) Math.pow(10, totalGainDb / 20.0f);
-            log.debug("Applying ReplayGain (Matroska Vorbis): {} dB -> {}x multiplier", totalGainDb, multiplier);
-            return multiplier;
-        }
-
-        return 1.0f;
+        return ReplayGainTools.resolveMultiplier(tags, 0.0f, "Matroska Vorbis");
     }
 
     @Override

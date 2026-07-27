@@ -23,4 +23,19 @@ public interface TrackStateListener {
      * @param thresholdMs The wait threshold that was exceeded for this event to trigger
      */
     void onTrackStuck(AudioTrack track, long thresholdMs);
+
+    /**
+     * Called once the ReplayGain state of a track is known. Every container resolves ReplayGain before producing its
+     * first audio frame, so this always runs ahead of any audio, but necessarily after the track has been handed to
+     * the executor (and therefore after the track start event).
+     *
+     * <p>Fired exactly once per track execution, including for tracks with no ReplayGain data, in which case
+     * {@code gainDb} is null. Defaulted to a no-op so existing implementations are unaffected.
+     *
+     * @param track  The audio track whose ReplayGain state was resolved
+     * @param gainDb The gain in decibels being applied, or null if the track has no ReplayGain data
+     */
+    default void onTrackReplayGainResolved(AudioTrack track, Float gainDb) {
+        // Optional for implementations that do not care about ReplayGain.
+    }
 }

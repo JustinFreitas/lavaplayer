@@ -37,6 +37,8 @@ public class MatroskaAudioTrack extends BaseAudioTrack {
         MatroskaStreamingFile file = loadMatroskaFile();
         MatroskaTrackConsumer trackConsumer = loadAudioTrack(file, localExecutor.getProcessingContext());
 
+        localExecutor.notifyReplayGainResolved(replayGainDb);
+
         try {
             localExecutor.executeProcessingLoop(() -> {
                 file.provideFrames(trackConsumer);

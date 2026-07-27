@@ -43,6 +43,8 @@ public class MpegAudioTrack extends BaseAudioTrack {
 
         MpegTrackConsumer trackConsumer = loadAudioTrack(file, localExecutor.getProcessingContext());
 
+        localExecutor.notifyReplayGainResolved(replayGainDb);
+
         try {
             MpegFileTrackProvider fileReader = file.loadReader(trackConsumer);
             if (fileReader == null) {

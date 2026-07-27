@@ -39,6 +39,8 @@ public class Mp3AudioTrack extends BaseAudioTrack {
                 this.replayGainDb = (float) (20.0 * Math.log10(provider.getVolumeMultiplier()));
             }
 
+            localExecutor.notifyReplayGainResolved(replayGainDb);
+
             log.debug("Starting to play MP3 track {}", getIdentifier());
             localExecutor.executeProcessingLoop(provider::provideFrames, provider::seekToTimecode);
         } finally {

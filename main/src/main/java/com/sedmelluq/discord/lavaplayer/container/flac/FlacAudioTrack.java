@@ -37,6 +37,8 @@ public class FlacAudioTrack extends BaseAudioTrack {
             this.replayGainDb = (float) (20.0 * Math.log10(trackProvider.getVolumeMultiplier()));
         }
 
+        localExecutor.notifyReplayGainResolved(replayGainDb);
+
         try {
             log.debug("Starting to play FLAC track {}", getIdentifier());
             localExecutor.executeProcessingLoop(trackProvider::provideFrames, trackProvider::seekToTimecode);

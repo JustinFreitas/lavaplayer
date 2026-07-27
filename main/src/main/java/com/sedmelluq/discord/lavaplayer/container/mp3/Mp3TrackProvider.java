@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.container.mp3;
 
+import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.common.OpusPacketRouter;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipeline;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipelineFactory;
@@ -55,6 +56,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     private final Mp3FrameReader frameReader;
     private final Map<String, String> tags;
     private String replayGainTxxx;
+    private String replayGainPeakTxxx;
 
     private int sampleRate;
     private int channelCount;
@@ -114,30 +116,28 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
     private float resolveVolumeMultiplier() {
         if (replayGainTxxx != null) {
-            String normalized = replayGainTxxx.replace('\0', '=');
+            Float gainDb = ReplayGainTools.parseGainDb(txxxValue(replayGainTxxx));
 
-            if (normalized.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
-                try {
-                    int tagIndex = normalized.toUpperCase().indexOf("REPLAYGAIN_TRACK_GAIN");
-                    if (tagIndex >= 0) {
-                        int dbIndex = normalized.indexOf("dB");
-                        if (dbIndex > 0) {
-                            String[] parts = normalized.split("=");
-                            if (parts.length >= 2) {
-                                String val = parts[1].replace("dB", "").trim();
-                                float gainDb = Float.parseFloat(val);
-                                float multiplier = (float) Math.pow(10, gainDb / 20.0f);
-                                log.debug("Applying ReplayGain (MP3): {} dB -> {}x multiplier", gainDb, multiplier);
-                                return multiplier;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to parse ReplayGain from TXXX: {}", replayGainTxxx);
-                }
+            if (gainDb != null) {
+                return ReplayGainTools.multiplierFromGain(gainDb, txxxValue(replayGainPeakTxxx), "MP3");
             }
         }
         return 1.0f;
+    }
+
+    /**
+     * Extracts the value half of a TXXX frame, whose text is a description and a value separated by a NUL.
+     *
+     * @param frame The raw frame text, may be null
+     * @return The value, or null if the frame is absent or malformed
+     */
+    private static String txxxValue(String frame) {
+        if (frame == null) {
+            return null;
+        }
+
+        int separator = frame.indexOf('\0');
+        return separator >= 0 ? frame.substring(separator + 1).trim() : null;
     }
 
     private void initialiseSeeker() throws IOException {
@@ -336,8 +336,16 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
                 if (text != null) {
                     tags.put(header.id, text);
 
-                    if (USER_TEXT_TAG.equals(header.id) && text.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
-                        replayGainTxxx = text;
+                    if (USER_TEXT_TAG.equals(header.id)) {
+                        // Gain and peak arrive as separate TXXX frames, and every TXXX frame shares the same map
+                        // key above, so each one that matters has to be kept aside as it goes past.
+                        String upper = text.toUpperCase();
+
+                        if (upper.contains(ReplayGainTools.TRACK_GAIN_TAG)) {
+                            replayGainTxxx = text;
+                        } else if (upper.contains(ReplayGainTools.TRACK_PEAK_TAG)) {
+                            replayGainPeakTxxx = text;
+                        }
                     }
                 }
             }
@@ -448,27 +456,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
     @Override
     public Float getReplayGainDb() {
-        if (replayGainTxxx != null) {
-            String normalized = replayGainTxxx.replace('\0', '=');
-            if (normalized.toUpperCase().contains("REPLAYGAIN_TRACK_GAIN")) {
-                try {
-                    int tagIndex = normalized.toUpperCase().indexOf("REPLAYGAIN_TRACK_GAIN");
-                    if (tagIndex >= 0) {
-                        int dbIndex = normalized.indexOf("dB");
-                        if (dbIndex > 0) {
-                            String[] parts = normalized.split("=");
-                            if (parts.length >= 2) {
-                                String val = parts[1].replace("dB", "").trim();
-                                return Float.parseFloat(val);
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to parse ReplayGain from TXXX: {}", replayGainTxxx);
-                }
-            }
-        }
-        return null;
+        return ReplayGainTools.parseGainDb(txxxValue(replayGainTxxx));
     }
 
     private record FrameHeader(String id, int size, int flags) {

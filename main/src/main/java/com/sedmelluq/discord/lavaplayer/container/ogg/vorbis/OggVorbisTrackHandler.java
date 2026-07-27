@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.container.ogg.vorbis;
 
+import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.ogg.OggPacketInputStream;
 import com.sedmelluq.discord.lavaplayer.container.ogg.OggTrackHandler;
 import com.sedmelluq.discord.lavaplayer.filter.AudioPipeline;
@@ -86,21 +87,7 @@ public class OggVorbisTrackHandler implements OggTrackHandler {
     }
 
     private float resolveVolumeMultiplier() {
-        String replayGainTag = tags.get("REPLAYGAIN_TRACK_GAIN");
-        if (replayGainTag == null) {
-            return 1.0f;
-        }
-
-        try {
-            String cleanValue = replayGainTag.replace("dB", "").trim();
-            float gainDb = Float.parseFloat(cleanValue);
-            float multiplier = (float) Math.pow(10, gainDb / 20.0f);
-            log.debug("Applying ReplayGain (Vorbis): {} dB -> {}x multiplier", gainDb, multiplier);
-            return multiplier;
-        } catch (NumberFormatException e) {
-            log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
-            return 1.0f;
-        }
+        return ReplayGainTools.resolveMultiplier(tags, 0.0f, "Vorbis");
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.sedmelluq.discord.lavaplayer.container.ogg.opus;
 
 import com.sedmelluq.discord.lavaplayer.container.common.OpusPacketRouter;
+import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.ogg.OggPacketInputStream;
 import com.sedmelluq.discord.lavaplayer.container.ogg.OggTrackHandler;
 import com.sedmelluq.discord.lavaplayer.tools.io.DirectBufferStreamBroker;
@@ -52,26 +53,14 @@ public class OggOpusTrackHandler implements OggTrackHandler {
 
     @Override
     public void initialise(AudioProcessingContext context, long timecode, long desiredTimecode) {
+        // The Opus header output gain is folded into resolveVolumeMultiplier() rather than applied unconditionally.
+        // The codec spec does treat it as mandatory on decode, but lavaplayer plays streams raw unless configured
+        // otherwise and replay gain is disabled by default, so applying any gain to an unconfigured player would
+        // change existing playback levels.
         if (context.configuration.isReplayGainEnabled()) {
             this.volumeMultiplier = resolveVolumeMultiplier();
-        } else if (headerGain != 0) {
-             // Even if ReplayGain is disabled, the header gain should arguably be applied as it's part of the codec spec.
-             // However, strictly speaking, isReplayGainEnabled might imply "no volume changes".
-             // But usually Header Gain is for normalization to a reference level.
-             // Let's assume we ONLY apply any gain if isReplayGainEnabled is true, OR if we decide header gain is mandatory.
-             // The user prompt implies "ReplayGain support".
-             // If I follow typical behavior, header gain is always applied. But Lavaplayer tends to be "raw" unless configured.
-             // But since `isReplayGainEnabled` defaults to false, applying header gain might surprise users.
-             // Let's stick to applying it only when ReplayGain is enabled for now, or maybe not?
-             // Actually, the spec says "The output gain is a value... to be applied... when decoding".
-             // It seems mandatory. But let's verify context.
-             // For now, I will group it with resolveVolumeMultiplier logic.
         }
-        
-        // Wait, if I change the logic to apply header gain ALWAYS, I might break existing volume assumptions.
-        // I'll stick to isReplayGainEnabled for now for SAFETY, as requested by "Conventions" (mimic existing).
-        // If ReplayGain is enabled, we include header gain.
-        
+
         opusPacketRouter = new OpusPacketRouter(context, 48000, channelCount);
         if (volumeMultiplier != 1.0f) {
             opusPacketRouter.setVolumeMultiplier(volumeMultiplier);
@@ -80,39 +69,8 @@ public class OggOpusTrackHandler implements OggTrackHandler {
     }
 
     private float resolveVolumeMultiplier() {
-        float totalGainDb = 0.0f;
-
-        // Apply header gain (Q7.8 format)
-        if (headerGain != 0) {
-            totalGainDb += headerGain / 256.0f;
-        }
-
-        String r128GainTag = tags.get("R128_TRACK_GAIN");
-        String replayGainTag = tags.get("REPLAYGAIN_TRACK_GAIN");
-
-        if (r128GainTag != null) {
-            try {
-                int r128Gain = Integer.parseInt(r128GainTag);
-                totalGainDb += r128Gain / 256.0f;
-            } catch (NumberFormatException e) {
-                 log.warn("Invalid R128_TRACK_GAIN tag value: {}", r128GainTag);
-            }
-        } else if (replayGainTag != null) {
-            try {
-                String cleanValue = replayGainTag.replace("dB", "").trim();
-                totalGainDb += Float.parseFloat(cleanValue);
-            } catch (NumberFormatException e) {
-                log.warn("Invalid ReplayGain tag value: {}", replayGainTag);
-            }
-        }
-
-        if (totalGainDb != 0.0f) {
-            float multiplier = (float) Math.pow(10, totalGainDb / 20.0f);
-            log.debug("Applying ReplayGain (Opus): {} dB -> {}x multiplier", totalGainDb, multiplier);
-            return multiplier;
-        }
-
-        return 1.0f;
+        // The header output gain is in Q7.8 format and is folded in on top of whatever the tags ask for.
+        return ReplayGainTools.resolveMultiplier(tags, headerGain / 256.0f, "Opus");
     }
 
     @Override

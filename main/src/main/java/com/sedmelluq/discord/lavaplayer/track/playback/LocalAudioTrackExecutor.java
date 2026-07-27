@@ -42,6 +42,11 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
     private long externalSeekPosition = -1;
     private boolean interruptibleForSeek = false;
     private volatile Throwable trackException;
+    // Held for the duration of execute() so that AudioTrack.process() implementations can report ReplayGain the
+    // moment they resolve it, which is before they produce their first frame.
+    private volatile TrackStateListener stateListener;
+    private final AtomicBoolean replayGainReported = new AtomicBoolean(false);
+    private volatile boolean replayGainReportDeferred = false;
 
     /**
      * @param audioTrack      The audio track that this executor executes
@@ -63,6 +68,38 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
 
     public AudioProcessingContext getProcessingContext() {
         return processingContext;
+    }
+
+    /**
+     * Reports the resolved ReplayGain state of this track to the state listener, at the point where the container
+     * knows whether ReplayGain applies and before the first frame is produced. Pass null when the track carries no
+     * ReplayGain data.
+     *
+     * <p>Only the first call per execution has any effect, so containers that do not deal in ReplayGain at all need
+     * not call it: {@link #executeProcessingLoop} reports null on their behalf, which keeps the guarantee that a
+     * listener always hears back exactly once for every track.
+     *
+     * @param gainDb The gain in decibels being applied, or null if none
+     */
+    public void notifyReplayGainResolved(Float gainDb) {
+        if (!replayGainReported.compareAndSet(false, true)) {
+            return;
+        }
+
+        TrackStateListener listener = stateListener;
+
+        if (listener != null) {
+            listener.onTrackReplayGainResolved(audioTrack, gainDb);
+        }
+    }
+
+    /**
+     * Suppresses the automatic null ReplayGain report that {@link #executeProcessingLoop} would otherwise make, for
+     * containers that only resolve ReplayGain once inside their read loop. Such a container must call
+     * {@link #notifyReplayGainResolved} itself before it provides any frames.
+     */
+    public void deferReplayGainReport() {
+        replayGainReportDeferred = true;
     }
 
     public StackTraceElement[] getStackTrace() {
@@ -104,6 +141,7 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
             log.debug("Starting to play track {} locally with listener {}", audioTrack.getInfo().identifier, listener);
 
             state.set(AudioTrackState.LOADING);
+            stateListener = listener;
 
             try {
                 audioTrack.process(this);
@@ -127,6 +165,8 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
                     ExceptionTools.rethrowErrors(e);
                 }
             } finally {
+                stateListener = null;
+
                 synchronized (actionSynchronizer) {
                     interrupt = interrupt != null ? interrupt : findInterrupt(null);
 
@@ -243,6 +283,12 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
      */
     public void executeProcessingLoop(ReadExecutor readExecutor, SeekExecutor seekExecutor, boolean waitOnEnd) {
         boolean proceed = true;
+
+        // Containers resolve ReplayGain before reaching this point, so anything still unreported here has none. This
+        // is a no-op for containers that already reported, and is skipped for those that resolve inside their loop.
+        if (!replayGainReportDeferred) {
+            notifyReplayGainResolved(null);
+        }
 
         if (checkPendingSeek(seekExecutor) == SeekResult.EXTERNAL_SEEK) {
             return;
