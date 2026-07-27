@@ -33,7 +33,7 @@ class ReplayGainToolsSpec extends Specification {
         def replayGain = [(ReplayGainTools.TRACK_GAIN_TAG): "5.0 dB"]
 
         expect: "both resolve to the same multiplier"
-        ReplayGainTools.resolveGainDb(r128) == 5.0f
+        ReplayGainTools.resolveGainDb(r128, 0.0f) == 5.0f
         ReplayGainTools.resolveMultiplier(r128, 0.0f, "test") ==
             ReplayGainTools.resolveMultiplier(replayGain, 0.0f, "test")
     }
@@ -46,15 +46,42 @@ class ReplayGainToolsSpec extends Specification {
         ]
 
         expect:
-        ReplayGainTools.resolveGainDb(tags) == 6.0f
+        ReplayGainTools.resolveGainDb(tags, 0.0f) == 6.0f
     }
 
-    def "folds extra gain such as the opus header gain into the total"() {
-        given:
+    def "corrects a header-only gain, which is on the same R128 scale as the tag"() {
+        given: "an opus file normalised purely through its header, with no gain tag at all"
+        float headerOnly = -9.6875f
+
+        and: "the same file with the residual R128 tag encoders usually write alongside it"
+        def withResidualTag = [(ReplayGainTools.R128_TRACK_GAIN_TAG): "0"]
+
+        expect: "both land at the same level - the reference shift is not conditional on the tag existing"
+        ReplayGainTools.resolveGainDb([:], headerOnly) == -4.6875f
+        ReplayGainTools.resolveGainDb(withResidualTag, headerOnly) == -4.6875f
+    }
+
+    def "applies the reference shift once to the sum, not once per component"() {
+        given: "half the gain in the header and half in the tag"
+        def tags = [(ReplayGainTools.R128_TRACK_GAIN_TAG): "-1280"] // -5 dB
+
+        expect: "-5 header + -5 tag + one 5 dB shift, not two"
+        ReplayGainTools.resolveGainDb(tags, -5.0f) == -5.0f
+    }
+
+    def "does not shift a replaygain tag sitting on top of a header gain"() {
+        given: "REPLAYGAIN_TRACK_GAIN is measured on output that already includes the header gain"
         def tags = [(ReplayGainTools.TRACK_GAIN_TAG): "-3.0 dB"]
 
-        expect: "-3 dB tagged plus 3 dB of header gain cancels out to no change"
+        expect: "-3 dB tagged plus 3 dB of header gain cancels out to no change, with no reference shift"
+        ReplayGainTools.resolveGainDb(tags, 3.0f) == 0.0f
         ReplayGainTools.resolveMultiplier(tags, 3.0f, "test") == 1.0f
+    }
+
+    def "treats a zero header gain with no tags as no gain at all"() {
+        expect:
+        ReplayGainTools.resolveGainDb([:], 0.0f) == 0.0f
+        ReplayGainTools.resolveMultiplier([:], 0.0f, "test") == 1.0f
     }
 
     @Unroll

@@ -8,8 +8,6 @@ import com.sedmelluq.discord.lavaplayer.filter.AudioPipelineFactory;
 import com.sedmelluq.discord.lavaplayer.filter.PcmFormat;
 import com.sedmelluq.discord.lavaplayer.natives.vorbis.VorbisDecoder;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -18,7 +16,6 @@ import java.util.Map;
  * Consumes Vorbis track data from a matroska file.
  */
 public class MatroskaVorbisTrackConsumer implements MatroskaTrackConsumer {
-    private static final Logger log = LoggerFactory.getLogger(MatroskaVorbisTrackConsumer.class);
     private static final int PCM_BUFFER_SIZE = 4096;
     private static final int COPY_BUFFER_SIZE = 256;
 

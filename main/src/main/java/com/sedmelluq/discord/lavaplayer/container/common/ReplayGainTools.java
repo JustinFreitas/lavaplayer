@@ -29,16 +29,17 @@ public class ReplayGainTools {
     }
 
     /**
-     * Resolves the volume multiplier described by a map of tags. {@code R128_TRACK_GAIN} takes precedence over
-     * {@code REPLAYGAIN_TRACK_GAIN}, and the result is limited so it cannot push the track's peak past full scale.
+     * Resolves the volume multiplier described by a map of tags, limited so it cannot push the track's peak past
+     * full scale.
      *
-     * @param tags        Tag map, keyed by uppercased tag name
-     * @param extraGainDb Additional gain to fold in, such as the Opus header output gain (0 if none)
-     * @param format      Format name, used only for logging
+     * @param tags             Tag map, keyed by uppercased tag name
+     * @param r128HeaderGainDb Gain already carried in the container header, in decibels and on the R128 (-23 LUFS)
+     *                         scale — the Opus header output gain. Pass 0 for formats that have no such field.
+     * @param format           Format name, used only for logging
      * @return The multiplier to apply, or 1.0 if the track carries no usable gain
      */
-    public static float resolveMultiplier(Map<String, String> tags, float extraGainDb, String format) {
-        float totalGainDb = extraGainDb + resolveGainDb(tags);
+    public static float resolveMultiplier(Map<String, String> tags, float r128HeaderGainDb, String format) {
+        float totalGainDb = resolveGainDb(tags, r128HeaderGainDb);
 
         if (totalGainDb == 0.0f) {
             return 1.0f;
@@ -48,24 +49,61 @@ public class ReplayGainTools {
     }
 
     /**
-     * @param tags Tag map, keyed by uppercased tag name
-     * @return The tagged gain in decibels, or 0 if the track carries none
+     * Resolves the total gain to apply, expressed on the ReplayGain 2.0 (-18 LUFS) scale.
+     *
+     * <p>The header gain is always folded into the result — the Opus spec makes it a decode-time gain rather than
+     * optional metadata — and a tag is then applied on top of it. (Callers still only consult this at all when
+     * ReplayGain is enabled, so an unconfigured player keeps playing streams raw.)
+     *
+     * <ul>
+     *   <li>{@code R128_TRACK_GAIN} is the residual half of the same -23 LUFS figure the header carries: encoders
+     *       write the bulk into the header and leave the tag as the remainder. The two are summed and the reference
+     *       shift is applied <b>once</b> to that sum, so a file normalised purely via its header lands at the same
+     *       level as the same file carrying an extra {@code R128_TRACK_GAIN=0}.</li>
+     *   <li>{@code REPLAYGAIN_TRACK_GAIN} is measured on decoded output, which already includes the header gain, and
+     *       targets -18 LUFS directly. It is added as-is with no shift, and supersedes the reference question
+     *       entirely. It is only consulted when there is no R128 tag, since the two describe the same correction on
+     *       different scales and adding both would double-count it.</li>
+     *   <li>With no tag at all, a non-zero header gain is -23 LUFS referenced normalisation and takes the shift.</li>
+     * </ul>
+     *
+     * @param tags             Tag map, keyed by uppercased tag name
+     * @param r128HeaderGainDb Gain carried in the container header, on the R128 scale (0 if none)
+     * @return The gain in decibels, or 0 if the track carries none
      */
-    public static float resolveGainDb(Map<String, String> tags) {
-        String r128GainTag = tags.get(R128_TRACK_GAIN_TAG);
+    public static float resolveGainDb(Map<String, String> tags, float r128HeaderGainDb) {
+        Float r128TagGainDb = parseR128GainDb(tags.get(R128_TRACK_GAIN_TAG));
 
-        if (r128GainTag != null) {
-            try {
-                return Integer.parseInt(r128GainTag.trim()) / 256.0f + R128_REFERENCE_OFFSET_DB;
-            } catch (NumberFormatException e) {
-                log.warn("Invalid {} tag value: {}", R128_TRACK_GAIN_TAG, r128GainTag);
-            }
-
-            return 0.0f;
+        if (r128TagGainDb != null) {
+            return r128HeaderGainDb + r128TagGainDb + R128_REFERENCE_OFFSET_DB;
         }
 
-        Float gainDb = parseGainDb(tags.get(TRACK_GAIN_TAG));
-        return gainDb != null ? gainDb : 0.0f;
+        Float replayGainDb = parseGainDb(tags.get(TRACK_GAIN_TAG));
+
+        if (replayGainDb != null) {
+            return r128HeaderGainDb + replayGainDb;
+        }
+
+        return r128HeaderGainDb != 0.0f ? r128HeaderGainDb + R128_REFERENCE_OFFSET_DB : 0.0f;
+    }
+
+    /**
+     * Parses an {@code R128_TRACK_GAIN} tag, which is a Q7.8 fixed-point integer rather than a decibel string.
+     *
+     * @param tag The raw tag value, may be null
+     * @return The gain in decibels on the R128 scale, or null if absent or unparseable
+     */
+    public static Float parseR128GainDb(String tag) {
+        if (tag == null) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(tag.trim()) / 256.0f;
+        } catch (NumberFormatException e) {
+            log.warn("Invalid {} tag value: {}", R128_TRACK_GAIN_TAG, tag);
+            return null;
+        }
     }
 
     /**

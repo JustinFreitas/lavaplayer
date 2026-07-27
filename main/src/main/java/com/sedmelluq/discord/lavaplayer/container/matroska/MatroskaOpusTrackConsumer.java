@@ -4,8 +4,6 @@ import com.sedmelluq.discord.lavaplayer.container.common.ReplayGainTools;
 import com.sedmelluq.discord.lavaplayer.container.common.OpusPacketRouter;
 import com.sedmelluq.discord.lavaplayer.container.matroska.format.MatroskaFileTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -14,7 +12,6 @@ import java.util.Map;
  * Consumes OPUS track data from a matroska file.
  */
 public class MatroskaOpusTrackConsumer implements MatroskaTrackConsumer {
-    private static final Logger log = LoggerFactory.getLogger(MatroskaOpusTrackConsumer.class);
 
     private final MatroskaFileTrack track;
     private final OpusPacketRouter opusPacketRouter;
@@ -41,20 +38,18 @@ public class MatroskaOpusTrackConsumer implements MatroskaTrackConsumer {
     }
 
     private float resolveVolumeMultiplier(Map<String, String> tags, byte[] codecPrivate) {
-        float totalGainDb = 0.0f;
+        float headerGainDb = 0.0f;
 
-        // Apply header gain (Q7.8 format)
+        // Header output gain, Q7.8 fixed point, on the same R128 scale as the tags.
         // OpusHead: 8 bytes magic + 1 byte version + 1 byte channels + 2 bytes pre-skip + 4 bytes sample rate + 2 bytes gain
         // Offset 16 (0x10)
         if (codecPrivate != null && codecPrivate.length >= 18) {
             // Little Endian
             short headerGain = (short) ((codecPrivate[16] & 0xFF) | ((codecPrivate[17] & 0xFF) << 8));
-            if (headerGain != 0) {
-                totalGainDb += headerGain / 256.0f;
-            }
+            headerGainDb = headerGain / 256.0f;
         }
 
-        return ReplayGainTools.resolveMultiplier(tags, totalGainDb, "Matroska Opus");
+        return ReplayGainTools.resolveMultiplier(tags, headerGainDb, "Matroska Opus");
     }
 
     @Override

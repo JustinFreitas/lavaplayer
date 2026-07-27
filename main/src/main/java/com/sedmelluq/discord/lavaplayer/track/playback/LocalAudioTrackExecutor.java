@@ -291,6 +291,9 @@ public class LocalAudioTrackExecutor implements AudioTrackExecutor {
         }
 
         if (checkPendingSeek(seekExecutor) == SeekResult.EXTERNAL_SEEK) {
+            // The read executor never runs on this path, so a container that deferred its report would otherwise
+            // never make one. Harmless for everyone else, who already reported above.
+            notifyReplayGainResolved(null);
             return;
         }
 

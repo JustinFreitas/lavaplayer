@@ -8,8 +8,6 @@ import com.sedmelluq.discord.lavaplayer.filter.PcmFormat;
 import com.sedmelluq.discord.lavaplayer.tools.io.BitStreamReader;
 import com.sedmelluq.discord.lavaplayer.tools.io.SeekableInputStream;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -18,7 +16,6 @@ import java.io.IOException;
  */
 @SuppressWarnings("unused")
 public class FlacTrackProvider {
-    private static final Logger log = LoggerFactory.getLogger(FlacTrackProvider.class);
 
     private final FlacTrackInfo info;
     private final SeekableInputStream inputStream;

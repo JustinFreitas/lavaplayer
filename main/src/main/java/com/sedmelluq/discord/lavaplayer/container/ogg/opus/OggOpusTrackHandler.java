@@ -6,8 +6,6 @@ import com.sedmelluq.discord.lavaplayer.container.ogg.OggPacketInputStream;
 import com.sedmelluq.discord.lavaplayer.container.ogg.OggTrackHandler;
 import com.sedmelluq.discord.lavaplayer.tools.io.DirectBufferStreamBroker;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,7 +16,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public class OggOpusTrackHandler implements OggTrackHandler {
-    private static final Logger log = LoggerFactory.getLogger(OggOpusTrackHandler.class);
 
     private final OggPacketInputStream packetInputStream;
     private final DirectBufferStreamBroker broker;
@@ -69,7 +66,7 @@ public class OggOpusTrackHandler implements OggTrackHandler {
     }
 
     private float resolveVolumeMultiplier() {
-        // The header output gain is in Q7.8 format and is folded in on top of whatever the tags ask for.
+        // The header output gain is Q7.8 fixed point and sits on the same R128 scale as the tags.
         return ReplayGainTools.resolveMultiplier(tags, headerGain / 256.0f, "Opus");
     }
 

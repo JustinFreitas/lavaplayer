@@ -9,8 +9,6 @@ import com.sedmelluq.discord.lavaplayer.filter.PcmFormat;
 import com.sedmelluq.discord.lavaplayer.natives.vorbis.VorbisDecoder;
 import com.sedmelluq.discord.lavaplayer.tools.io.DirectBufferStreamBroker;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioProcessingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,7 +19,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public class OggVorbisTrackHandler implements OggTrackHandler {
-    private static final Logger log = LoggerFactory.getLogger(OggVorbisTrackHandler.class);
     private static final int PCM_BUFFER_SIZE = 4096;
 
     private final byte[] infoPacket;
