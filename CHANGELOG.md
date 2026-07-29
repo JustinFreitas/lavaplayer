@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.7_7] - 2026-07-29
+* Updated library `ch.qos.logback:logback-classic` to `1.6.1` (was `1.5.38`)
+* Updated plugin `com.github.ben-manes.versions` to `0.56.0` (was `0.54.0`)
+
 ## [2.2.7_2] - 2026-07-13
 * Fixed bug in Dependency Autopilot version calculation when higher semver base versions had lower suffixes
 * Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
