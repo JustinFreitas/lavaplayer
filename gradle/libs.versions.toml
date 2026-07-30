@@ -24,13 +24,13 @@ groovy = "5.0.7"
 # https://mvnrepository.com/artifact/org.spockframework/spock-core
 spock-core = "2.4-groovy-5.0"
 # https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-logback-classic = "1.5.38"
+logback-classic = "1.6.1"
 # https://mvnrepository.com/artifact/com.vanniktech/gradle-maven-publish-plugin
 maven-publish-plugin = "0.37.0"
 # https://mvnrepository.com/artifact/commons-codec/commons-codec
 commons-codec = "1.22.0"
 # https://github.com/ben-manes/gradle-versions-plugin
-ben-manes-versions = "0.54.0"
+ben-manes-versions = "0.56.0"
 # https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
 junit-platform = "6.1.2"
 # Mocking classes in Spock
