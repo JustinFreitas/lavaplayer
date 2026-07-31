@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.7_8] - 2026-07-31
+* Updated library `org.apache.httpcomponents.client5:httpclient5` to `5.6.3` (was `5.6.2`)
+* Updated library `org.jsoup:jsoup` to `1.23.1` (was `1.22.2`)
+* Updated plugin `com.github.ben-manes.versions` to `0.57.0` (was `0.56.0`)
+
 ## [2.2.7_2] - 2026-07-13
 * Fixed bug in Dependency Autopilot version calculation when higher semver base versions had lower suffixes
 * Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
