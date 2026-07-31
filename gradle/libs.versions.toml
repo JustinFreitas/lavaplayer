@@ -8,9 +8,9 @@ intellij-annotations = "26.1.0"
 # https://mvnrepository.com/artifact/tools.jackson.core/jackson-core
 jackson = "3.2.1"
 # https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5
-httpclient = "5.6.2"
+httpclient = "5.6.3"
 # https://mvnrepository.com/artifact/org.jsoup/jsoup
-jsoup = "1.22.2"
+jsoup = "1.23.1"
 # https://mvnrepository.com/artifact/net.iharder/base64
 base64 = "2.3.9"
 # https://mvnrepository.com/artifact/org.json/json
@@ -30,7 +30,7 @@ maven-publish-plugin = "0.37.0"
 # https://mvnrepository.com/artifact/commons-codec/commons-codec
 commons-codec = "1.22.0"
 # https://github.com/ben-manes/gradle-versions-plugin
-ben-manes-versions = "0.56.0"
+ben-manes-versions = "0.57.0"
 # https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
 junit-platform = "6.1.2"
 # Mocking classes in Spock
