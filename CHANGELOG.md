@@ -1,5 +1,11 @@
 # Change Log
 
+## [2.2.7_10] - 2026-08-11
+* Updated library `org.apache.httpcomponents.client5:httpclient5` to `5.6.4` (was `5.6.3`)
+* Updated library `org.junit.platform:junit-platform-launcher` to `6.1.3` (was `6.1.2`)
+* Updated plugin `com.github.ben-manes.versions` to `0.61.0` (was `0.59.0`)
+* Updated Gradle Wrapper to `9.7.0` (was `9.6.1`)
+
 ## [2.2.7_2] - 2026-07-13
 * Fixed bug in Dependency Autopilot version calculation when higher semver base versions had lower suffixes
 * Updated library `org.junit.platform:junit-platform-launcher` to `6.1.2` (was `6.1.1`)
