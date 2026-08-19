@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.7_12] - 2026-08-19
+* Updated library `net.bytebuddy:byte-buddy` to `1.18.12` (was `1.18.11`)
+* Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.12` (was `1.18.11`)
+* Updated library `org.apache.groovy:groovy` to `5.1.0` (was `5.0.8`)
+
 ## [2.2.7_11] - 2026-08-15
 * Updated library `ch.qos.logback:logback-classic` to `1.6.3` (was `1.6.2`)
 * Updated library `org.json:json` to `20260814` (was `20260719`)
