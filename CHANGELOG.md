@@ -2,6 +2,8 @@
 
 ## [2.2.7_13] - 2026-08-25
 * Updated Gradle Wrapper to `9.7.1` (was `9.7.0`)
+* Updated library `org.jsoup:jsoup` to `1.23.2` (was `1.23.1`)
+* Bumped Spring Boot to `4.1.1` (was `4.1.0`) in spring-boot-starter extension
 
 ## [2.2.7_12] - 2026-08-19
 * Updated library `net.bytebuddy:byte-buddy` to `1.18.12` (was `1.18.11`)
