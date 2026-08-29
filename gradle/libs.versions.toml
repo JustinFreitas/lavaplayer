@@ -20,7 +20,7 @@ ibxm-fork = "a75"
 # https://mvnrepository.com/artifact/org.mozilla/rhino-engine
 rhino-engine = "1.9.1"
 # https://mvnrepository.com/artifact/org.apache.groovy/groovy
-groovy = "5.1.0"
+groovy = "5.1.1"
 # https://mvnrepository.com/artifact/org.spockframework/spock-core
 spock-core = "2.4-groovy-5.0"
 # https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
