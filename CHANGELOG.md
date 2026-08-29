@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.7_14] - 2026-08-29
+* Updated library `org.apache.groovy:groovy` to `5.1.1` (was `5.1.0`)
+
 ## [2.2.7_13] - 2026-08-25
 * Updated Gradle Wrapper to `9.7.1` (was `9.7.0`)
 * Updated library `org.jsoup:jsoup` to `1.23.2` (was `1.23.1`)
