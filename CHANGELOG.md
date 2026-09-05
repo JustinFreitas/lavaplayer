@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.7_15] - 2026-09-05
+* Updated library `net.bytebuddy:byte-buddy` to `1.18.13` (was `1.18.12`)
+* Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.13` (was `1.18.12`)
+* Updated library `org.slf4j:slf4j-api` to `2.0.19` (was `2.0.18`)
+
 ## [2.2.7_14] - 2026-08-29
 * Updated library `org.apache.groovy:groovy` to `5.1.1` (was `5.1.0`)
 
