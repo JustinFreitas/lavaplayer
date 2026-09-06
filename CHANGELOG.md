@@ -1,6 +1,8 @@
 # Change Log
 
-## [2.2.7_15] - 2026-09-05
+## [2.2.7_15] - 2026-09-06
+* Fixed partial HTTP requests taking `Content-Length` as total resource length in `PersistentHttpStream` (lavalink-devs PR #198)
+* Implemented stream serial tracking for Ogg files to avoid mixing non-audio streams (lavalink-devs PR #193)
 * Updated library `net.bytebuddy:byte-buddy` to `1.18.13` (was `1.18.12`)
 * Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.13` (was `1.18.12`)
 * Updated library `org.slf4j:slf4j-api` to `2.0.19` (was `2.0.18`)
