@@ -16,6 +16,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
@@ -121,7 +122,12 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
         HttpGet request = getConnectRequest();
 
         // A subclass may narrow the request by rewriting the URL, which the response does not advertise.
-        boolean partialRequest = !request.getUri().equals(contentUrl);
+        boolean partialRequest;
+        try {
+            partialRequest = !request.getUri().equals(contentUrl);
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
 
         currentResponse = httpInterface.execute(request);
         lastStatusCode = currentResponse.getCode();
