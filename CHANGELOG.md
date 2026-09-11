@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.7_16] - 2026-09-11
+* Updated library `org.apache.groovy:groovy` to `5.1.2` (was `5.1.1`)
+
 ## [2.2.7_15] - 2026-09-06
 * Fixed partial HTTP requests taking `Content-Length` as total resource length in `PersistentHttpStream` (lavalink-devs PR #198)
 * Implemented stream serial tracking for Ogg files to avoid mixing non-audio streams (lavalink-devs PR #193)
