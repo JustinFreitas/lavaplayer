@@ -1,9 +1,9 @@
 # Change Log
 
-## [2.2.7_17] - 2026-09-17
+## [2.2.7_17] - 2026-09-18
 * Updated library `net.bytebuddy:byte-buddy` to `1.18.14` (was `1.18.13`)
 * Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.14` (was `1.18.13`)
-* Updated plugin `com.github.ben-manes.versions` to `0.63.1` (was `0.61.0`)
+* Updated plugin `com.github.ben-manes.versions` to `0.64.0` (was `0.61.0`)
 
 ## [2.2.7_16] - 2026-09-11
 * Updated library `org.apache.groovy:groovy` to `5.1.2` (was `5.1.1`)
