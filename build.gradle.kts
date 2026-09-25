@@ -11,10 +11,11 @@ plugins {
 
 tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
     rejectVersionIf {
+        val isGroovy6 = candidate.group == "org.apache.groovy" && candidate.version.startsWith("6.")
         val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { candidate.version.uppercase().contains(it) }
         val regex = "^[0-9,.v-]+(-r)?$".toRegex()
         val isStable = stableKeyword || regex.matches(candidate.version)
-        !isStable
+        isGroovy6 || !isStable
     }
     outputFormatter = "json,plain"
 }

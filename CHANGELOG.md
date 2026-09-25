@@ -2,7 +2,6 @@
 
 ## [2.2.7_18] - 2026-09-25
 * Updated library `ch.qos.logback:logback-classic` to `1.6.4` (was `1.6.3`)
-* Updated library `org.apache.groovy:groovy` to `6.0.0` (was `5.1.2`)
 * Updated library `org.slf4j:slf4j-api` to `2.0.20` (was `2.0.19`)
 * Updated library `tools.jackson.core:jackson-core` to `3.2.3` (was `3.2.2`)
 * Updated library `tools.jackson.core:jackson-databind` to `3.2.3` (was `3.2.2`)
