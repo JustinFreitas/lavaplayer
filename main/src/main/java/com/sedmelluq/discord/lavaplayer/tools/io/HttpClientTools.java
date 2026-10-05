@@ -141,6 +141,7 @@ public class HttpClientTools {
             case HttpStatus.SC_MOVED_TEMPORARILY:
             case HttpStatus.SC_SEE_OTHER:
             case HttpStatus.SC_TEMPORARY_REDIRECT:
+            case HttpStatus.SC_PERMANENT_REDIRECT:
                 return true;
             default:
                 return false;

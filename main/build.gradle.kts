@@ -43,6 +43,10 @@ dependencies {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
+
     val updateVersion by registering {
         val output = "${layout.buildDirectory.get()}/resources/main/com/sedmelluq/discord/lavaplayer/tools/version.txt"
         inputs.property("version", version)
