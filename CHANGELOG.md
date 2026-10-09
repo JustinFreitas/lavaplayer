@@ -1,9 +1,10 @@
 # Change Log
 
-## [2.2.7_20] - 2026-10-09
+## [2.2.7_21] - 2026-10-09
 * Fix HTTP 308 Permanent Redirect not treated as redirect in HttpClientTools (#201)
 * Updated plugin `com.github.ben-manes.versions` to `0.65.0` (was `0.64.0`)
 * Updated Gradle Wrapper to `9.8.1` (was `9.8.0`)
+* Fixed JitPack OpenJDK 25 SDKMan provisioning by utilizing OpenJDK 21 bootstrap and toolchain convention
 
 ## [2.2.7_19] - 2026-10-03
 * Updated library `ch.qos.logback:logback-classic` to `1.6.5` (was `1.6.4`)
