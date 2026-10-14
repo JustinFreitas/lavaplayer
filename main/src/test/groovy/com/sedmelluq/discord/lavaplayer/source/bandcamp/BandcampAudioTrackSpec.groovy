@@ -48,4 +48,33 @@ class BandcampAudioTrackSpec extends Specification {
         // Check that the returned URL is correctly unescaped
         resultUrl == "https://t4.bcbits.com/stream/abc&xyz"
     }
+
+    def "process throws FriendlyException when media URL is not available"() {
+        given:
+        def sourceManager = Mock(BandcampAudioSourceManager)
+        def trackInfo = new AudioTrackInfo(
+            "title", "artist", 1000L, "https://example.com/track/title", false, "https://example.com/track/title"
+        )
+        def track = new BandcampAudioTrack(trackInfo, sourceManager)
+        def httpInterface = Mock(HttpInterface)
+        def response = Mock(ClassicHttpResponse)
+        def entity = Mock(HttpEntity)
+        def executor = Mock(com.sedmelluq.discord.lavaplayer.track.playback.LocalAudioTrackExecutor)
+
+        sourceManager.getHttpInterface() >> httpInterface
+        sourceManager.readTrackListInformation(_ as String) >> com.sedmelluq.discord.lavaplayer.tools.JsonBrowser.NULL_BROWSER
+
+        when:
+        track.process(executor)
+
+        then:
+        1 * httpInterface.execute(_ as HttpGet) >> response
+        1 * response.getCode() >> 200
+        1 * response.getEntity() >> entity
+        1 * entity.getContent() >> new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8))
+
+        def ex = thrown(com.sedmelluq.discord.lavaplayer.tools.FriendlyException)
+        ex.severity == com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.SUSPICIOUS
+        ex.message == "Track media stream URL not found on Bandcamp page."
+    }
 }

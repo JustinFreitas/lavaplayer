@@ -52,8 +52,8 @@ public class OggAudioTrack extends BaseAudioTrack {
         localExecutor.deferReplayGainReport();
 
         localExecutor.executeProcessingLoop(() -> {
-            try {
-                processTrackLoop(packetInputStream, localExecutor, handler, blueprint, initialised);
+            try (OggTrackHandler activeHandler = handler) {
+                processTrackLoop(packetInputStream, localExecutor, activeHandler, blueprint, initialised);
             } catch (IOException e) {
                 throw new FriendlyException("Stream broke when playing OGG track.", SUSPICIOUS, e);
             }
@@ -65,27 +65,45 @@ public class OggAudioTrack extends BaseAudioTrack {
                                   OggTrackHandler handler,
                                   OggTrackBlueprint blueprint,
                                   AtomicBoolean initialised) throws IOException, InterruptedException {
-        while (blueprint != null) {
-            // fix: only initialise once to avoid resetting the reported playback position
-            if (initialised.compareAndSet(false, true)) {
-                handler.initialise(localExecutor.getProcessingContext(), 0, 0);
+        OggTrackHandler currentHandler = handler;
+        try {
+            while (blueprint != null) {
+                // fix: only initialise once to avoid resetting the reported playback position
+                if (initialised.compareAndSet(false, true)) {
+                    currentHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
 
-                Float gainDb = handler.getReplayGainDb();
-                if (gainDb != null) {
-                    this.replayGainApplied = true;
-                    this.replayGainDb = gainDb;
+                    Float gainDb = currentHandler.getReplayGainDb();
+                    if (gainDb != null) {
+                        this.replayGainApplied = true;
+                        this.replayGainDb = gainDb;
+                    }
+
+                    // Only the first stream in the chain is reported (the executor ignores later calls); chained
+                    // sub-streams still update replayGainDb for anything reading it directly.
+                    localExecutor.notifyReplayGainResolved(gainDb);
                 }
 
-                // Only the first stream in the chain is reported (the executor ignores later calls); chained
-                // sub-streams still update replayGainDb for anything reading it directly.
-                localExecutor.notifyReplayGainResolved(gainDb);
+                currentHandler.provideFrames();
+                blueprint = OggTrackLoader.loadTrackBlueprint(packetInputStream);
+
+                if (blueprint != null) {
+                    try {
+                        currentHandler.close();
+                    } catch (IOException e) {
+                        log.debug("Failed to close chained Ogg handler", e);
+                    }
+                    currentHandler = blueprint.loadTrackHandler(packetInputStream);
+                    initialised.set(false);
+                }
             }
-
-            handler.provideFrames();
-            blueprint = OggTrackLoader.loadTrackBlueprint(packetInputStream);
-
-            // reset initialised state so the next chained stream can be initialised
-            initialised.set(false);
+        } finally {
+            if (currentHandler != null && currentHandler != handler) {
+                try {
+                    currentHandler.close();
+                } catch (IOException e) {
+                    log.debug("Failed to close final chained Ogg handler", e);
+                }
+            }
         }
     }
 

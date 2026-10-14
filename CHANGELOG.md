@@ -1,5 +1,19 @@
 # Change Log
 
+## [2.2.7_22] - 2026-10-13
+* Fixed native resource leak in `OggAudioTrack` and properly reloaded handler across chained OGG bitstreams
+* Guarded `BandcampAudioTrack` against missing track media stream URL with `FriendlyException`
+* Fixed `BufferOverflowException` in `DirectBufferStreamBroker` when capacity request exceeds double existing size
+* Adapted upstream PR #200 for HttpClient 5 to apply response timeout during proxy connection establishment in `ExtendedConnectionOperator`
+* Implemented upstream Issue #194 to fall back to filename without extension when audio track title metadata is missing in `LocalAudioSourceManager`
+* Hardened static `RequestConfig` fields in `HttpClientTools` with `volatile` modifier
+* Modernized Gradle DSL property delegates for Gradle 10 compatibility and added Java 25 `--enable-native-access=ALL-UNNAMED` test flag
+* Updated library `org.apache.httpcomponents.client5:httpclient5` to `5.6.5` (was `5.6.4`)
+* Updated library `net.bytebuddy:byte-buddy` to `1.18.15` (was `1.18.14`)
+* Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.15` (was `1.18.14`)
+* Updated plugin `io.github.ben-manes.versions` to `0.66.0` (was `0.65.0`)
+* Updated native source `mstorsjo/fdk-aac` to `3.0.0` (was `2.0.3`)
+
 ## [2.2.7_21] - 2026-10-09
 * Fix HTTP 308 Permanent Redirect not treated as redirect in HttpClientTools (#201)
 * Updated plugin `com.github.ben-manes.versions` to `0.65.0` (was `0.64.0`)

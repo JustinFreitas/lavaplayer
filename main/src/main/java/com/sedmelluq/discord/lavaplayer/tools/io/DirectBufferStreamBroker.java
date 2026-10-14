@@ -101,7 +101,8 @@ public class DirectBufferStreamBroker {
 
     private void ensureCapacity(int capacity) {
         if (capacity > currentBuffer.capacity()) {
-            ByteBuffer newBuffer = ByteBuffer.allocateDirect(currentBuffer.capacity() << 1);
+            int newCapacity = Math.max(capacity, currentBuffer.capacity() << 1);
+            ByteBuffer newBuffer = ByteBuffer.allocateDirect(newCapacity);
             currentBuffer.flip();
 
             newBuffer.put(currentBuffer);

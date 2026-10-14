@@ -34,7 +34,7 @@ ben-manes-versions = "0.66.0"
 # https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
 junit-platform = "6.1.3"
 # Mocking classes in Spock
-bytebuddy = "1.18.14"
+bytebuddy = "1.18.15"
 objenesis = "3.6"
 # https://mvnrepository.com/artifact/org.ajoberstar.grgit/grgit-gradle
 grgit = "5.3.3"
@@ -78,6 +78,6 @@ objenesis = { group = "org.objenesis", name = "objenesis", version.ref = "objene
 
 [plugins]
 maven-publish-base = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish-plugin" }
-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 grgit = { id = "org.ajoberstar.grgit", version.ref = "grgit" }
 download = { id = "de.undercouch.download", version.ref = "download" }

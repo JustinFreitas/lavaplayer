@@ -54,7 +54,13 @@ public class LocalAudioSourceManager extends ProbingAudioSourceManager {
             int lastDotIndex = file.getName().lastIndexOf('.');
             String fileExtension = lastDotIndex >= 0 ? file.getName().substring(lastDotIndex + 1) : null;
 
-            return new MediaContainerDetection(containerRegistry, reference, inputStream,
+            String fallbackTitle = reference.title;
+            if (fallbackTitle == null) {
+                fallbackTitle = lastDotIndex > 0 ? file.getName().substring(0, lastDotIndex) : file.getName();
+            }
+            AudioReference effectiveReference = new AudioReference(reference.identifier, fallbackTitle);
+
+            return new MediaContainerDetection(containerRegistry, effectiveReference, inputStream,
                 MediaContainerHints.from(null, fileExtension)).detectContainer();
         } catch (IOException e) {
             throw new FriendlyException("Failed to open file for reading.", SUSPICIOUS, e);

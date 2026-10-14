@@ -1,6 +1,7 @@
 package com.sedmelluq.discord.lavaplayer.tools.http;
 
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.config.Lookup;
 import org.apache.hc.core5.http.io.SocketConfig;
@@ -147,7 +148,7 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         boolean last
     ) throws IOException {
         Socket socket = socketFactory.createSocket(context);
-        configureSocket(socket, socketConfig);
+        configureSocket(socket, socketConfig, context);
 
         try {
             socket = socketFactory.connectSocket(connectTimeout, socket, host, remoteAddress, localAddress, context);
@@ -194,8 +195,18 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
             (localAddress instanceof Inet6Address && remoteAddress instanceof Inet6Address);
     }
 
-    private void configureSocket(Socket socket, SocketConfig socketConfig) throws IOException {
-        socket.setSoTimeout((int) socketConfig.getSoTimeout().toMilliseconds());
+    private void configureSocket(Socket socket, SocketConfig socketConfig, HttpContext context) throws IOException {
+        int soTimeout = (int) socketConfig.getSoTimeout().toMilliseconds();
+        if (context != null) {
+            RequestConfig requestConfig = HttpClientContext.adapt(context).getRequestConfig();
+            if (requestConfig != null && requestConfig.getResponseTimeout() != null) {
+                int responseTimeout = (int) requestConfig.getResponseTimeout().toMilliseconds();
+                if (soTimeout == 0 && responseTimeout > 0) {
+                    soTimeout = responseTimeout;
+                }
+            }
+        }
+        socket.setSoTimeout(soTimeout);
         socket.setReuseAddress(socketConfig.isSoReuseAddress());
         socket.setTcpNoDelay(socketConfig.isTcpNoDelay());
         socket.setKeepAlive(socketConfig.isSoKeepAlive());

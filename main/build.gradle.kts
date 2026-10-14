@@ -45,6 +45,7 @@ dependencies {
 tasks {
     test {
         useJUnitPlatform()
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 
     val updateVersion by registering {
@@ -62,10 +63,6 @@ tasks {
 
     classes {
         dependsOn(updateVersion)
-    }
-
-    test {
-        useJUnitPlatform()
     }
 }
 

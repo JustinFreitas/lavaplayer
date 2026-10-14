@@ -37,14 +37,14 @@ import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.
 public class HttpClientTools {
     private static final Logger log = LoggerFactory.getLogger(HttpClientTools.class);
 
-    public static RequestConfig DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
+    public static volatile RequestConfig DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
         .setConnectTimeout(Timeout.ofMilliseconds(3000))
         .setConnectionRequestTimeout(Timeout.ofMilliseconds(3000))
         .setResponseTimeout(Timeout.ofMilliseconds(3000))
         .setCookieSpec(StandardCookieSpec.RELAXED)
         .build();
 
-    private static RequestConfig NO_COOKIES_REQUEST_CONFIG = RequestConfig.custom()
+    private static volatile RequestConfig NO_COOKIES_REQUEST_CONFIG = RequestConfig.custom()
         .setConnectTimeout(Timeout.ofMilliseconds(3000))
         .setConnectionRequestTimeout(Timeout.ofMilliseconds(3000))
         .setResponseTimeout(Timeout.ofMilliseconds(3000))
