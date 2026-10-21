@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.2.7_23] - 2026-10-21
+* Updated library `tools.jackson.core:jackson-core` to `3.2.4` (was `3.2.3`)
+* Updated library `tools.jackson.core:jackson-databind` to `3.2.4` (was `3.2.3`)
+* Updated Gradle Wrapper to `9.8.2` (was `9.8.1`)
+
 ## [2.2.7_22] - 2026-10-13
 * Fixed native resource leak in `OggAudioTrack` and properly reloaded handler across chained OGG bitstreams
 * Guarded `BandcampAudioTrack` against missing track media stream URL with `FriendlyException`
