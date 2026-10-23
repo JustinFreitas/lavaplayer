@@ -1,6 +1,6 @@
 # Change Log
 
-## [2.2.7_26] - 2026-10-22
+## [2.2.7_27] - 2026-10-22
 * Excluded `soundcloud.cloud` signed CDN URLs from `client_id` parameter injection in `SoundCloudHttpContextFilter` (#202)
 * Migrated `updateVersion` task in `main/build.gradle.kts` from deprecated `by registering` delegate to `tasks.register` for Gradle 10 compatibility
 
