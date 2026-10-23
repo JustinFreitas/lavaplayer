@@ -1,6 +1,8 @@
 # Change Log
 
-## [2.2.7_23] - 2026-10-21
+## [2.2.7_23] - 2026-10-22
+* Updated library `org.springframework.boot:spring-boot-autoconfigure` to `4.1.2` (was `4.1.1`)
+* Updated library `org.springframework.boot:spring-boot-configuration-processor` to `4.1.2` (was `4.1.1`)
 * Updated library `tools.jackson.core:jackson-core` to `3.2.4` (was `3.2.3`)
 * Updated library `tools.jackson.core:jackson-databind` to `3.2.4` (was `3.2.3`)
 * Updated Gradle Wrapper to `9.8.2` (was `9.8.1`)
