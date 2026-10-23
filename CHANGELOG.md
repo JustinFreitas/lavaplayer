@@ -1,7 +1,7 @@
 # Change Log
 
-## [2.2.7_24] - 2026-10-22
-* Bypassed JitPack stale GCS Maven mirror (`~/.m2/settings.xml`) for Gradle 9.8.2 mirror settings reuse
+## [2.2.7_25] - 2026-10-22
+* Bypassed JitPack stale GCS Maven mirror (`~/.gradle/init.gradle` and `repo1.maven.org`) and added `safe.directory` in `jitpack.yml`
 
 ## [2.2.7_23] - 2026-10-22
 * Updated library `org.springframework.boot:spring-boot-autoconfigure` to `4.1.2` (was `4.1.1`)
