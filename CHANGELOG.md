@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.7_26] - 2026-10-22
+* Excluded `soundcloud.cloud` signed CDN URLs from `client_id` parameter injection in `SoundCloudHttpContextFilter` (#202)
+* Migrated `updateVersion` task in `main/build.gradle.kts` from deprecated `by registering` delegate to `tasks.register` for Gradle 10 compatibility
+
 ## [2.2.7_25] - 2026-10-22
 * Bypassed JitPack stale GCS Maven mirror (`~/.gradle/init.gradle` and `repo1.maven.org`) and added `safe.directory` in `jitpack.yml`
 

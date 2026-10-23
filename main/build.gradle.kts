@@ -48,7 +48,7 @@ tasks {
         jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 
-    val updateVersion by registering {
+    val updateVersion = tasks.register("updateVersion") {
         val output = "${layout.buildDirectory.get()}/resources/main/com/sedmelluq/discord/lavaplayer/tools/version.txt"
         inputs.property("version", version)
         outputs.file(output)

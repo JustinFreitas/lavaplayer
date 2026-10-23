@@ -43,7 +43,8 @@ public class SoundCloudHttpContextFilter implements HttpContextFilter {
         }
 
         try {
-            if (request.getUri().getHost().contains("sndcdn.com")) {
+            String host = request.getUri().getHost();
+            if (host != null && (host.contains("sndcdn.com") || host.contains("soundcloud.cloud"))) {
                 // CDN urls do not require client ID (it actually breaks them)
                 return;
             }
