@@ -29,6 +29,7 @@ allprojects {
 
     repositories {
         mavenLocal()
+        maven("https://repo.maven.apache.org/maven2/") { name = "MavenCentralDirect" }
         mavenCentral()
         maven("https://jitpack.io")
     }
