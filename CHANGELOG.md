@@ -1,5 +1,11 @@
 # Change Log
 
+## [2.2.7_28] - 2026-10-29
+* Updated library `ch.qos.logback:logback-classic` to `1.6.6` (was `1.6.5`)
+* Updated library `net.bytebuddy:byte-buddy` to `1.18.16` (was `1.18.15`)
+* Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.16` (was `1.18.15`)
+* Updated library `org.mozilla:rhino-engine` to `1.9.2` (was `1.9.1`)
+
 ## [2.2.7_27] - 2026-10-22
 * Excluded `soundcloud.cloud` signed CDN URLs from `client_id` parameter injection in `SoundCloudHttpContextFilter` (#202)
 * Migrated `updateVersion` task in `main/build.gradle.kts` from deprecated `by registering` delegate to `tasks.register` for Gradle 10 compatibility
