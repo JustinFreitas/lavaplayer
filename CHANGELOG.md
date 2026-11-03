@@ -1,5 +1,11 @@
 # Change Log
 
+## [2.2.7_29] - 2026-11-03
+* Updated library `net.bytebuddy:byte-buddy` to `1.18.17` (was `1.18.16`)
+* Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.17` (was `1.18.16`)
+* Updated library `org.jsoup:jsoup` to `1.24.1` (was `1.23.2`)
+* Updated plugin `io.github.ben-manes.versions` to `0.67.0` (was `0.66.0`)
+
 ## [2.2.7_28] - 2026-10-29
 * Updated library `ch.qos.logback:logback-classic` to `1.6.6` (was `1.6.5`)
 * Updated library `net.bytebuddy:byte-buddy` to `1.18.16` (was `1.18.15`)
