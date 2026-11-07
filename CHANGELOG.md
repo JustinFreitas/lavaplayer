@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.7_30] - 2026-11-07
+* Updated Gradle Wrapper to `9.9.0` (was `9.8.2`)
+
 ## [2.2.7_29] - 2026-11-03
 * Updated library `net.bytebuddy:byte-buddy` to `1.18.17` (was `1.18.16`)
 * Updated library `net.bytebuddy:byte-buddy-agent` to `1.18.17` (was `1.18.16`)
