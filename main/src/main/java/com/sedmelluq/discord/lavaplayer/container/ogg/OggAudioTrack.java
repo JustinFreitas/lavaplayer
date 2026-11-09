@@ -45,19 +45,31 @@ public class OggAudioTrack extends BaseAudioTrack {
         }
 
         OggTrackHandler handler = blueprint.loadTrackHandler(packetInputStream);
-        AtomicBoolean initialised = new AtomicBoolean(false);
+        AtomicBoolean initialised = new AtomicBoolean(true);
 
-        // Unlike the other containers, OGG only learns its gain once the handler is initialised inside the read
-        // loop, so it reports for itself rather than letting the executor report null on entry.
+        // Unlike the other containers, OGG only learns its gain once the handler is initialised, so it reports for
+        // itself rather than letting the executor report null on entry.
         localExecutor.deferReplayGainReport();
 
-        localExecutor.executeProcessingLoop(() -> {
-            try (OggTrackHandler activeHandler = handler) {
-                processTrackLoop(packetInputStream, localExecutor, activeHandler, blueprint, initialised);
-            } catch (IOException e) {
-                throw new FriendlyException("Stream broke when playing OGG track.", SUSPICIOUS, e);
+        try (OggTrackHandler activeHandler = handler) {
+            activeHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
+
+            Float gainDb = activeHandler.getReplayGainDb();
+            if (gainDb != null) {
+                this.replayGainApplied = true;
+                this.replayGainDb = gainDb;
             }
-        }, handler::seekToTimecode, true);
+
+            localExecutor.notifyReplayGainResolved(gainDb);
+
+            localExecutor.executeProcessingLoop(() -> {
+                try {
+                    processTrackLoop(packetInputStream, localExecutor, activeHandler, blueprint, initialised);
+                } catch (IOException e) {
+                    throw new FriendlyException("Stream broke when playing OGG track.", SUSPICIOUS, e);
+                }
+            }, activeHandler::seekToTimecode, true);
+        }
     }
 
     private void processTrackLoop(OggPacketInputStream packetInputStream,
