@@ -1,5 +1,8 @@
 # Change Log
 
+## [2.2.7_31] - 2026-11-11
+* Updated Gradle Wrapper to `9.9.1` (was `9.9.0`)
+
 ## [2.2.7_30] - 2026-11-09
 * Initialized `OggTrackHandler` before `executeProcessingLoop` and moved `try-with-resources` outside the processing loop in `OggAudioTrack` so initial start-offset and mid-track seeks succeed without closing the native decoder
 * Updated library `tools.jackson.core:jackson-core` to `3.3.0` (was `3.2.4`)
