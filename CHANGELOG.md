@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.2.7_32] - 2026-11-12
+* Fixed `OPUS_GET_CHANNELS` undefined symbol regression in `natives/connector/opus.c` by tracking channel counts in `opus_encoder_state_t` and `opus_decoder_state_t` JNI state wrappers
+* Adapted `natives/fdk-aac/CMakeLists.txt` and `natives/connector/CMakeLists.txt` for `mstorsjo/fdk-aac` `3.0.0` `cpp/` source layout and embedded codec version metadata (`connector_codec_versions`) in `natives/connector/versions.c`
+* Switched Xiph `ogg`, `vorbis`, and `opus` native source downloads in `natives/build.gradle` from flaky `downloads.xiph.org` URLs to GitHub Releases and Fastly IPv4 mirrors with SHA-256 verification, version markers, and parameterized CMake codec version arguments
+* Updated `.github/workflows/natives.yml`, `.github/workflows/dependency-update.yml`, and `.github/scripts/check_and_update.py` to trigger native builds on `gradle/libs.versions.toml` changes and automatically sync archive SHA-256 hashes in `natives/build.gradle`
+* Updated Windows `libmpg123-0.dll` (`win-x86-64` and `win-x86`) to `1.33.7` and rebuilt native `connector` libraries (`win-x86-64`, `win-x86`, `linux-x86-64`, and Universal `x86_64`+`arm64` `darwin`) against `fdk-aac 3.0.0`, `mpg123 1.33.7`, `libopus 1.6.1`, `libVorbis 1.3.7`, `ogg 1.3.6`, and `libsamplerate 0.2.2`
+
 ## [2.2.7_31] - 2026-11-11
 * Mapped `replaygain_track_peak` to `REPLAYGAIN_TRACK_PEAK` in `MpegFileLoader` so positive ReplayGain on MP4/M4A tracks is peak-limited
 * Fixed floor binary search in `OggPacketInputStream.seek()` (eliminating `mid == 0` off-by-one/OOB on 0/1-page streams) and filtered non-audio header/continuation pages in `OggPageScanner.createSeekTable()`

@@ -15,7 +15,9 @@
 #define ENABLE_SINC_BEST_CONVERTER 1
 
 #define PACKAGE "libsamplerate"
+#ifndef VERSION
 #define VERSION "0.2.2"
+#endif
 
 #ifdef _MSC_VER
 #define inline __inline

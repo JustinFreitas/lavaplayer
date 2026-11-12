@@ -1,6 +1,7 @@
 import os
 import re
 import urllib.request
+import hashlib
 import json
 import tomllib
 import sys
@@ -10,6 +11,7 @@ from datetime import date
 # Paths
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOML_PATH = os.path.join(ROOT_DIR, "gradle", "libs.versions.toml")
+NATIVES_BUILD_GRADLE_PATH = os.path.join(ROOT_DIR, "natives", "build.gradle")
 REPORT_PATH = os.path.join(ROOT_DIR, "build", "dependencyUpdates", "report.json")
 
 # Pins and configurations
@@ -21,6 +23,87 @@ NATIVE_REPOS = {
     "samplerate": ("libsndfile/libsamplerate", True, None),
     "fdk-aac": ("mstorsjo/fdk-aac", False, None), # uses tags
 }
+
+NATIVE_ARCHIVES = {
+    # format: toml_key -> (gradle_sha_prop, [url_templates])
+    "opus": (
+        "opusSha256",
+        [
+            "https://github.com/xiph/opus/releases/download/v{version}/opus-{version}.tar.gz",
+            "https://distfiles.macports.org/libopus/opus-{version}.tar.gz",
+            "https://ftp.osuosl.org/pub/xiph/releases/opus/opus-{version}.tar.gz",
+        ],
+    ),
+    "mpg123": (
+        "mpg123Sha256",
+        ["https://www.mpg123.de/download/mpg123-{version}.tar.bz2"],
+    ),
+    "ogg": (
+        "oggSha256",
+        [
+            "https://github.com/xiph/ogg/releases/download/v{version}/libogg-{version}.zip",
+            "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-{version}.zip",
+        ],
+    ),
+    "vorbis": (
+        "vorbisSha256",
+        [
+            "https://github.com/xiph/vorbis/releases/download/v{version}/libvorbis-{version}.zip",
+            "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-{version}.zip",
+        ],
+    ),
+    "samplerate": (
+        "sampleRateSha256",
+        ["https://github.com/libsndfile/libsamplerate/archive/refs/tags/{version}.tar.gz"],
+    ),
+    "fdk-aac": (
+        "fdkAacSha256",
+        ["https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v{version}.zip"],
+    ),
+}
+
+def compute_native_archive_sha256(toml_key, version):
+    entry = NATIVE_ARCHIVES.get(toml_key)
+    if not entry:
+        return None
+    _, url_templates = entry
+    for tpl in url_templates:
+        url = tpl.format(version=version)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                digest = hashlib.sha256()
+                while True:
+                    chunk = response.read(65536)
+                    if not chunk:
+                        break
+                    digest.update(chunk)
+                sha256_hex = digest.hexdigest()
+                print(f"Computed SHA-256 for {toml_key} {version} from {url}: {sha256_hex}")
+                return sha256_hex
+        except Exception as e:
+            print(f"Warning: could not fetch {url} for SHA-256 ({e}); trying fallback if available.", file=sys.stderr)
+    print(f"Error: failed to compute SHA-256 for {toml_key} {version} from all mirrors.", file=sys.stderr)
+    return None
+
+def update_natives_build_gradle_hashes(sha_updates):
+    if not sha_updates or not os.path.exists(NATIVES_BUILD_GRADLE_PATH):
+        return False
+    with open(NATIVES_BUILD_GRADLE_PATH, "r", encoding="utf-8") as f:
+        content = f.read()
+    modified = False
+    for toml_key, new_sha in sha_updates.items():
+        prop_name = NATIVE_ARCHIVES[toml_key][0]
+        pattern = re.compile(rf'(ext\.{re.escape(prop_name)}\s*=\s*")([0-9a-fA-F]{{64}})(")')
+        new_content, count = pattern.subn(rf'\g<1>{new_sha}\g<3>', content)
+        if count > 0 and new_content != content:
+            content = new_content
+            modified = True
+    if modified:
+        with open(NATIVES_BUILD_GRADLE_PATH, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("Successfully updated SHA-256 hashes in natives/build.gradle.")
+    return modified
 
 def get_latest_github_version(owner_repo, use_releases_api=True):
     url = f"https://api.github.com/repos/{owner_repo}/releases/latest" if use_releases_api else f"https://api.github.com/repos/{owner_repo}/tags"
@@ -160,6 +243,7 @@ def main():
     current_versions = toml_data.get("versions", {})
     
     updates = {}
+    native_sha_updates = {}
     changelog_entries = []
     natives_updated = False
     gradle_updated = False
@@ -176,8 +260,13 @@ def main():
         
         latest = get_latest_github_version(repo, use_release)
         if latest and latest != current_val:
+            new_sha = compute_native_archive_sha256(key, latest)
+            if not new_sha:
+                print(f"Skipping native {key} bump to {latest} because archive SHA-256 could not be verified.", file=sys.stderr)
+                continue
             print(f"Native update found: {key} {current_val} -> {latest}")
             updates[key] = latest
+            native_sha_updates[key] = new_sha
             changelog_entries.append(f"Updated native {key} to `{latest}` (was `{current_val}`)")
             natives_updated = True
 
@@ -186,10 +275,15 @@ def main():
     if current_mpg123:
         latest_mpg123 = get_latest_mpg123_version()
         if latest_mpg123 and latest_mpg123 != current_mpg123:
-            print(f"Native update found: mpg123 {current_mpg123} -> {latest_mpg123}")
-            updates["mpg123"] = latest_mpg123
-            changelog_entries.append(f"Updated native mpg123 to `{latest_mpg123}` (was `{current_mpg123}`)")
-            natives_updated = True
+            new_sha = compute_native_archive_sha256("mpg123", latest_mpg123)
+            if new_sha:
+                print(f"Native update found: mpg123 {current_mpg123} -> {latest_mpg123}")
+                updates["mpg123"] = latest_mpg123
+                native_sha_updates["mpg123"] = new_sha
+                changelog_entries.append(f"Updated native mpg123 to `{latest_mpg123}` (was `{current_mpg123}`)")
+                natives_updated = True
+            else:
+                print(f"Skipping native mpg123 bump to {latest_mpg123} because archive SHA-256 could not be verified.", file=sys.stderr)
 
     # 2. Check Gradle plugin and library updates from report.json
     if os.path.exists(REPORT_PATH):
@@ -264,6 +358,9 @@ def main():
                 with open(TOML_PATH, "w", encoding="utf-8") as f:
                     f.writelines(updated_lines)
                 print("Successfully updated libs.versions.toml.")
+
+        if native_sha_updates:
+            update_natives_build_gradle_hashes(native_sha_updates)
 
         # Update Gradle wrapper if needed
         if "gradle-wrapper" in updates:

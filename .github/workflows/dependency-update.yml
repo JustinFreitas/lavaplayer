@@ -52,7 +52,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH_NAME="dep-update/${{ steps.run-script.outputs.next_version }}"
           git checkout -b "$BRANCH_NAME"
-          git add gradle/libs.versions.toml
+          git add gradle/libs.versions.toml natives/build.gradle
           # Add gradle-wrapper files if modified
           git add gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.jar || true
           git commit -m "chore(deps): automatically update dependencies to ${{ steps.run-script.outputs.next_version }}"

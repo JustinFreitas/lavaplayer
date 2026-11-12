@@ -6,18 +6,24 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 apply from: 'natives.gradle'
 
-// https://ftp.osuosl.org/pub/xiph/releases/opus/
+// https://github.com/xiph/opus/releases (fallback: https://ftp.osuosl.org/pub/xiph/releases/opus/)
 ext.opusVersion = libs.versions.opus.get()
+ext.opusSha256 = "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1"
 // https://www.mpg123.de/download/
 ext.mpg123Version = libs.versions.mpg123.get()
-// https://downloads.xiph.org/releases/ogg/
+ext.mpg123Sha256 = "31d0e35a4ca567ec9b5ebda6c3062bb4435d6d3eacd6ef0d95cadd7854dc03ee"
+// https://github.com/xiph/ogg/releases
 ext.oggVersion = libs.versions.ogg.get()
-// https://downloads.xiph.org/releases/vorbis/
+ext.oggSha256 = "e347b59c29e8f938bb48b2fda5da02f2d5d97316c004abaa76e171cf4a2fbdd7"
+// https://github.com/xiph/vorbis/releases
 ext.vorbisVersion = libs.versions.vorbis.get()
+ext.vorbisSha256 = "57c8bc92d2741934b8dc939af49c2639edc44b8879cba2ec14ad3189e2814582"
 // https://github.com/libsndfile/libsamplerate/releases
 ext.sampleRateVersion = libs.versions.samplerate.get()
+ext.sampleRateSha256 = "16e881487f184250deb4fcb60432d7556ab12cb58caea71ef23960aec6c0405a"
 // https://github.com/mstorsjo/fdk-aac/tags
 ext.fdkAacVersion = libs.versions.fdk.aac.get()
+ext.fdkAacSha256 = "36d92cbb3732392d963944d0e962aa361b1edf0495476f37da753a0e46f73503"
 
 def verifyFileSha256(File file, String expectedHash) {
     def digest = java.security.MessageDigest.getInstance("SHA-256")
@@ -30,18 +36,37 @@ def verifyFileSha256(File file, String expectedHash) {
     }
 }
 
+def downloadFromMirrors(List<String> urls, Object destPath) {
+    Exception lastError = null
+    for (String candidateUrl : urls) {
+        try {
+            download.run {
+                src candidateUrl
+                dest destPath
+                overwrite true
+            }
+            return
+        } catch (Exception e) {
+            logger.warn("Download failed from ${candidateUrl} (${e.message}); trying fallback mirror if available.")
+            lastError = e
+        }
+    }
+    throw new GradleException("Failed to download archive from all mirrors: ${urls}", lastError)
+}
+
 tasks.register('load') {
     doLast {
-        if (!file("$projectDir/samplerate/src").exists()) {
-            def downloadPath = "${layout.buildDirectory.get()}/tmp/libsamplerate.tar.gz"
+        def sampleRateMarker = file("$projectDir/samplerate/src/.version")
+        if (!file("$projectDir/samplerate/src").exists() || !sampleRateMarker.exists() || sampleRateMarker.text.trim() != sampleRateVersion) {
+            file("$projectDir/samplerate/src").deleteDir()
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/libsamplerate-${sampleRateVersion}.tar.gz"
             def unpackPath = "${layout.buildDirectory.get()}/tmp"
 
-            download.run {
-                src "https://github.com/libsndfile/libsamplerate/archive/refs/tags/${sampleRateVersion}.tar.gz"
-                dest downloadPath
-            }
+            downloadFromMirrors([
+                "https://github.com/libsndfile/libsamplerate/archive/refs/tags/${sampleRateVersion}.tar.gz"
+            ], downloadPath)
 
-            verifyFileSha256(file(downloadPath), "16e881487f184250deb4fcb60432d7556ab12cb58caea71ef23960aec6c0405a")
+            verifyFileSha256(file(downloadPath), sampleRateSha256)
 
             copy {
                 from tarTree(resources.gzip(downloadPath))
@@ -59,18 +84,31 @@ tasks.register('load') {
                 from "$unpackPath/libsamplerate-${sampleRateVersion}/include"
                 into "$projectDir/samplerate/src"
             }
+
+            sampleRateMarker.text = sampleRateVersion
         }
 
-        if (!file("$projectDir/fdk-aac/libAACdec").exists()) {
+        def fdkMarker = file("$projectDir/fdk-aac/.version")
+        def fdkUnpacked = file("$projectDir/fdk-aac/cpp/libAACdec").exists() || file("$projectDir/fdk-aac/libAACdec").exists()
+        if (!fdkUnpacked || !fdkMarker.exists() || fdkMarker.text.trim() != fdkAacVersion) {
+            file("$projectDir/fdk-aac").listFiles()?.each { entry ->
+                if (entry.name != "CMakeLists.txt") {
+                    if (entry.isDirectory()) {
+                        entry.deleteDir()
+                    } else {
+                        entry.delete()
+                    }
+                }
+            }
+
             def downloadPath = "${layout.buildDirectory.get()}/tmp/fdk-aac-v${fdkAacVersion}.zip"
             def unpackPath = "${layout.buildDirectory.get()}"
 
-            download.run {
-                src "https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v${fdkAacVersion}.zip"
-                dest downloadPath
-            }
+            downloadFromMirrors([
+                "https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v${fdkAacVersion}.zip"
+            ], downloadPath)
 
-            verifyFileSha256(file(downloadPath), "36d92cbb3732392d963944d0e962aa361b1edf0495476f37da753a0e46f73503")
+            verifyFileSha256(file(downloadPath), fdkAacSha256)
 
             copy {
                 from zipTree(file(downloadPath))
@@ -85,29 +123,35 @@ tasks.register('load') {
                 into "$projectDir/fdk-aac"
                 exclude "CMakeLists.txt"
             }
+
+            fdkMarker.text = fdkAacVersion
         }
 
         if (!file("$projectDir/vorbis/libogg-${oggVersion}").exists()) {
-            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.zip"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/libogg-${oggVersion}.zip"
 
-            download.run {
-                src "https://downloads.xiph.org/releases/ogg/libogg-${oggVersion}.zip"
-                dest downloadPath
-            }
+            downloadFromMirrors([
+                "https://github.com/xiph/ogg/releases/download/v${oggVersion}/libogg-${oggVersion}.zip",
+                "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-${oggVersion}.zip"
+            ], downloadPath)
 
-            verifyFileSha256(file(downloadPath), "e347b59c29e8f938bb48b2fda5da02f2d5d97316c004abaa76e171cf4a2fbdd7")
+            verifyFileSha256(file(downloadPath), oggSha256)
 
             copy {
                 from zipTree(file(downloadPath))
                 into "$projectDir/vorbis"
             }
+        }
 
-            download.run {
-                src "https://downloads.xiph.org/releases/vorbis/libvorbis-${vorbisVersion}.zip"
-                dest downloadPath
-            }
+        if (!file("$projectDir/vorbis/libvorbis-${vorbisVersion}").exists()) {
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/libvorbis-${vorbisVersion}.zip"
 
-            verifyFileSha256(file(downloadPath), "57c8bc92d2741934b8dc939af49c2639edc44b8879cba2ec14ad3189e2814582")
+            downloadFromMirrors([
+                "https://github.com/xiph/vorbis/releases/download/v${vorbisVersion}/libvorbis-${vorbisVersion}.zip",
+                "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-${vorbisVersion}.zip"
+            ], downloadPath)
+
+            verifyFileSha256(file(downloadPath), vorbisSha256)
 
             copy {
                 from zipTree(file(downloadPath))
@@ -116,14 +160,15 @@ tasks.register('load') {
         }
 
         if (!file("$projectDir/opus/opus-${opusVersion}").exists()) {
-            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.tar.gz"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/opus-${opusVersion}.tar.gz"
 
-            download.run {
-                src "https://downloads.xiph.org/releases/opus/opus-${opusVersion}.tar.gz"
-                dest downloadPath
-            }
+            downloadFromMirrors([
+                "https://github.com/xiph/opus/releases/download/v${opusVersion}/opus-${opusVersion}.tar.gz",
+                "https://distfiles.macports.org/libopus/opus-${opusVersion}.tar.gz",
+                "https://ftp.osuosl.org/pub/xiph/releases/opus/opus-${opusVersion}.tar.gz"
+            ], downloadPath)
 
-            verifyFileSha256(file(downloadPath), "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1")
+            verifyFileSha256(file(downloadPath), opusSha256)
 
             copy {
                 from tarTree(file(downloadPath))
@@ -132,14 +177,13 @@ tasks.register('load') {
         }
 
         if (!Os.isFamily(Os.FAMILY_WINDOWS) && !file("$projectDir/mp3/mpg123-${mpg123Version}").exists()) {
-            def downloadPath = "${layout.buildDirectory.get()}/tmp/temp.tar.bz2"
+            def downloadPath = "${layout.buildDirectory.get()}/tmp/mpg123-${mpg123Version}.tar.bz2"
 
-            download.run {
-                src "https://www.mpg123.de/download/mpg123-${mpg123Version}.tar.bz2"
-                dest downloadPath
-            }
+            downloadFromMirrors([
+                "https://www.mpg123.de/download/mpg123-${mpg123Version}.tar.bz2"
+            ], downloadPath)
 
-            verifyFileSha256(file(downloadPath), "31d0e35a4ca567ec9b5ebda6c3062bb4435d6d3eacd6ef0d95cadd7854dc03ee")
+            verifyFileSha256(file(downloadPath), mpg123Sha256)
 
             copy {
                 from tarTree(file(downloadPath))
@@ -174,8 +218,6 @@ def getMsBuildLocation() {
     return ext.msBuildPath
 }
 
-
-
 def findVcTool(name) {
     def vswhere = new File(System.getenv("ProgramFiles(x86)"),
         "Microsoft Visual Studio/Installer/vswhere.exe")
@@ -197,13 +239,13 @@ def findVcTool(name) {
 
 // mpg123 is shipped as a prebuilt DLL on Windows rather than compiled from
 // source; synthesize the import library the connector links against from that
-// DLL's export table so libs/64/mpg123.lib is always present for the link.
-def generateMpg123ImportLibOnWindows() {
-    def base = file("$projectDir/libs/64")
+// DLL's export table so libs/<bits>/mpg123.lib is always present for the link.
+def generateMpg123ImportLibOnWindows(String bitsDir = "64", String targetIdentifier = "win-x86-64", String machineArch = "x64") {
+    def base = file("$projectDir/libs/${bitsDir}")
     base.mkdirs()
 
     def dll = file("${project(':natives-publish').projectDir}" +
-        "/src/main/resources/natives/win-x86-64/libmpg123-0.dll")
+        "/src/main/resources/natives/${targetIdentifier}/libmpg123-0.dll")
     if (!dll.exists()) {
         throw new IllegalStateException("Prebuilt mpg123 DLL not found: $dll")
     }
@@ -227,10 +269,10 @@ def generateMpg123ImportLibOnWindows() {
     def defFile = new File(base, "mpg123.def")
     defFile.text = (["EXPORTS"] + names).join(System.lineSeparator())
 
-    def libProcess = [lib, "/def:${defFile.absolutePath}", "/machine:x64",
+    def libProcess = [lib, "/def:${defFile.absolutePath}", "/machine:${machineArch}",
         "/name:libmpg123-0.dll", "/out:${new File(base, "mpg123.lib").absolutePath}"].
         execute()
-    waitForAndCheckSuccess(libProcess, "mpg123 import lib")
+    waitForAndCheckSuccess(libProcess, "mpg123 import lib (${targetIdentifier})")
 }
 
 static def waitForAndCheckSuccess(process, name) {
@@ -257,14 +299,16 @@ def withCpuArgs(cpu) {
 }
 
 def buildMpg123OnLinux(force) {
-    def present = file("${projectDir}/libs/64/libmpg123.a").exists()
+    def versionMarker = file("${projectDir}/libs/64/.mpg123-version")
+    def present = file("${projectDir}/libs/64/libmpg123.a").exists() &&
+        versionMarker.exists() && versionMarker.text.trim() == mpg123Version
 
     if (force || !present) {
         def mpgDir = file("$projectDir/mp3/mpg123-${mpg123Version}")
         def overrides = autotoolsNoOpOverrides()
 
         def flags = "-fPIC -O3 -fdata-sections -ffunction-sections"
-        def process = (['./configure', '--enable-static'] + withCpuArgs('x86-64') + ['--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"] + overrides).
+        def process = (['sh', './configure', '--enable-static'] + withCpuArgs('x86-64') + ['--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"] + overrides).
             execute(null as String[], mpgDir)
 
         waitForAndCheckSuccess(process, "Mpg123 ./configure")
@@ -279,6 +323,52 @@ def buildMpg123OnLinux(force) {
             from "$projectDir/mp3/mpg123-${mpg123Version}/src/libmpg123/.libs/libmpg123.a"
             into "$projectDir/libs/64"
         }
+
+        versionMarker.parentFile.mkdirs()
+        versionMarker.text = mpg123Version
+    }
+}
+
+def buildMpg123MacSlice(String archFlag, String hostTriple, String cpuType, String outDirName, boolean force) {
+    def outDir = file("${projectDir}/libs/${outDirName}")
+    def versionMarker = new File(outDir, ".mpg123-version")
+    def present = new File(outDir, "libmpg123.a").exists() &&
+        versionMarker.exists() && versionMarker.text.trim() == mpg123Version
+
+    if (force || !present) {
+        def mpgDir = file("$projectDir/mp3/mpg123-${mpg123Version}")
+        def overrides = autotoolsNoOpOverrides()
+        def buildTriple = System.getProperty("os.arch") == "aarch64" ? "aarch64-apple-darwin" : "x86_64-apple-darwin"
+        def cflags = "-arch ${archFlag} -fPIC -O3 -fdata-sections -ffunction-sections"
+
+        def process = ([
+            'sh', './configure',
+            '--enable-static',
+            '--disable-shared',
+            "--build=${buildTriple}".toString(),
+            "--host=${hostTriple}".toString(),
+            "--with-cpu=${cpuType}".toString(),
+            '--with-pic',
+            "CFLAGS=${cflags}".toString(),
+            "CXXFLAGS=${cflags}".toString(),
+            "CCASFLAGS=-arch ${archFlag}".toString(),
+            "LDFLAGS=-arch ${archFlag}".toString()
+        ] + overrides).execute(null as String[], mpgDir)
+        waitForAndCheckSuccess(process, "Mpg123 ./configure (${archFlag})")
+
+        process = (["make", "clean"] + overrides).execute(null as String[], mpgDir)
+        waitForAndCheckSuccess(process, "make clean (${archFlag})")
+
+        process = (["make", "-j4", "src/libmpg123/libmpg123.la"] + overrides).execute(null as String[], mpgDir)
+        waitForAndCheckSuccess(process, "make libmpg123 (${archFlag})")
+
+        outDir.mkdirs()
+        copy {
+            from "$projectDir/mp3/mpg123-${mpg123Version}/src/libmpg123/.libs/libmpg123.a"
+            into outDir
+        }
+
+        versionMarker.text = mpg123Version
     }
 }
 
@@ -287,16 +377,21 @@ def prepareOggOnLinux(force) {
 
     if (force || !configured) {
         def buildArgs = Os.isFamily(Os.FAMILY_MAC) ? [] : ["--build=x86_64-pc-linux-gnu"]
-        def process = (["./configure", "--enable-static"] + buildArgs + ["--with-pic"]).
+        def process = (["sh", "./configure", "--enable-static"] + buildArgs + ["--with-pic"]).
             execute(null as String[], file("$projectDir/vorbis/libogg-${oggVersion}"))
 
-        process.waitForProcessOutput(System.out as Appendable, System.err)
+        waitForAndCheckSuccess(process, "libogg ./configure")
     }
 }
 
 def prepareBuilds(force) {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-        generateMpg123ImportLibOnWindows()
+        generateMpg123ImportLibOnWindows("64", "win-x86-64", "x64")
+        generateMpg123ImportLibOnWindows("32", "win-x86", "x86")
+    } else if (Os.isFamily(Os.FAMILY_MAC)) {
+        prepareOggOnLinux(force)
+        buildMpg123MacSlice("x86_64", "x86_64-apple-darwin", "x86-64", "darwin-x86_64", force)
+        buildMpg123MacSlice("arm64", "aarch64-apple-darwin", "aarch64", "darwin-arm64", force)
     } else {
         prepareOggOnLinux(force)
         buildMpg123OnLinux(force)
@@ -306,15 +401,111 @@ def prepareBuilds(force) {
 tasks.register('compileNatives') {}
 tasks.register('checkNatives') {}
 
-def buildTaskConfig = [
-    buildBase      : layout.buildDirectory.get(),
-    projectBase    : projectDir,
-    deployBase     : project(':natives-publish').projectDir,
-    setupDependency: tasks.named('load'),
-    setupDoFirst   : { config -> prepareBuilds(false) },
-    compileTask    : tasks.named('compileNatives'),
-    checkTask      : tasks.named('checkNatives'),
-    name           : 'connector'
+def cmakeVersionArguments = [
+    "-DOPUS_VERSION=${opusVersion}".toString(),
+    "-DVORBIS_VERSION=${vorbisVersion}".toString(),
+    "-DOGG_VERSION=${oggVersion}".toString(),
+    "-DMPG123_VERSION=${mpg123Version}".toString(),
+    "-DSAMPLERATE_VERSION=${sampleRateVersion}".toString(),
+    "-DFDK_AAC_VERSION=${fdkAacVersion}".toString()
 ]
 
-createBuildTask(tasks, buildTaskConfig)
+if (Os.isFamily(Os.FAMILY_MAC)) {
+    def macScratchDeploy = file("${layout.buildDirectory.get()}/mac-slices")
+    def libsX64Dir = file("$projectDir/libs/darwin-x86_64").absolutePath
+    def libsArm64Dir = file("$projectDir/libs/darwin-arm64").absolutePath
+
+    createBuildTask(tasks, [
+        buildBase      : layout.buildDirectory.get(),
+        projectBase    : projectDir,
+        deployBase     : macScratchDeploy,
+        setupDependency: tasks.named('load'),
+        setupDoFirst   : { config -> prepareBuilds(false) },
+        compileTask    : tasks.named('compileNatives'),
+        checkTask      : tasks.named('checkNatives'),
+        taskBase       : 'connector-darwin-x86-64',
+        parameters     : [
+            'identifier'    : 'darwin-x86_64',
+            'library'       : 'libconnector.dylib',
+            'setupArguments': ['-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_OSX_ARCHITECTURES=x86_64'],
+            'buildArguments': ['--parallel', '4'],
+            'env'           : [:]
+        ],
+        cmakeArguments : cmakeVersionArguments + ["-DMPG123_LIB_DIR=${libsX64Dir}".toString()],
+        name           : 'connector'
+    ])
+
+    createBuildTask(tasks, [
+        buildBase      : layout.buildDirectory.get(),
+        projectBase    : projectDir,
+        deployBase     : macScratchDeploy,
+        setupDependency: tasks.named('connector-darwin-x86-64-deploy'),
+        compileTask    : tasks.named('compileNatives'),
+        checkTask      : tasks.named('checkNatives'),
+        taskBase       : 'connector-darwin-arm64',
+        parameters     : [
+            'identifier'    : 'darwin-arm64',
+            'library'       : 'libconnector.dylib',
+            'setupArguments': ['-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_OSX_ARCHITECTURES=arm64'],
+            'buildArguments': ['--parallel', '4'],
+            'env'           : [:]
+        ],
+        cmakeArguments : cmakeVersionArguments + ["-DMPG123_LIB_DIR=${libsArm64Dir}".toString()],
+        name           : 'connector'
+    ])
+
+    def universalTask = tasks.register('connector-darwin-universal', Exec) {
+        dependsOn tasks.named('connector-darwin-x86-64-deploy'), tasks.named('connector-darwin-arm64-deploy')
+        def outDir = file("${project(':natives-publish').projectDir}/src/main/resources/natives/darwin")
+        doFirst {
+            outDir.mkdirs()
+        }
+        executable 'lipo'
+        args '-create',
+            "${projectDir}/dist/darwin-x86_64/libconnector.dylib",
+            "${projectDir}/dist/darwin-arm64/libconnector.dylib",
+            '-output',
+            "${outDir.absolutePath}/libconnector.dylib"
+    }
+
+    tasks.named('compileNatives').configure {
+        dependsOn universalTask
+    }
+} else {
+    def buildTaskConfig = [
+        buildBase      : layout.buildDirectory.get(),
+        projectBase    : projectDir,
+        deployBase     : project(':natives-publish').projectDir,
+        setupDependency: tasks.named('load'),
+        setupDoFirst   : { config -> prepareBuilds(false) },
+        compileTask    : tasks.named('compileNatives'),
+        checkTask      : tasks.named('checkNatives'),
+        cmakeArguments : cmakeVersionArguments,
+        name           : 'connector'
+    ]
+
+    createBuildTask(tasks, buildTaskConfig)
+}
+
+if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    def libs32Dir = file("$projectDir/libs/32").absolutePath.replace('\\', '/')
+    def win32TaskConfig = [
+        buildBase      : layout.buildDirectory.get(),
+        projectBase    : projectDir,
+        deployBase     : project(':natives-publish').projectDir,
+        setupDependency: tasks.named('connector-64-setup'),
+        compileTask    : tasks.named('compileNatives'),
+        checkTask      : tasks.named('checkNatives'),
+        taskBase       : 'connector-32',
+        parameters     : [
+            'identifier'    : 'win-x86',
+            'library'       : 'connector.dll',
+            'setupArguments': ['-DCMAKE_BUILD_TYPE=Release', '-A', 'Win32'],
+            'buildArguments': ['--config', 'Release'],
+            'env'           : [:]
+        ],
+        cmakeArguments : cmakeVersionArguments + ["-DMPG123_LIB_DIR=${libs32Dir}".toString()],
+        name           : 'connector'
+    ]
+    createBuildTask(tasks, win32TaskConfig)
+}

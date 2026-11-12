@@ -74,11 +74,11 @@ def getCmakeExecutable() {
 }
 
 def createBuildTask(tasksHolder, config) {
-    def parameters = getBuildParameters(config.name)
+    def parameters = config.parameters ?: getBuildParameters(config.name)
     def buildDirectory = "${config.buildBase}/${parameters.identifier}"
     def distDirectory = "${config.projectBase}/dist/${parameters.identifier}"
     def deployDirectory = "${config.deployBase}/src/main/resources/natives/${parameters.identifier}"
-    def taskBase = "${config.name}-64"
+    def taskBase = config.taskBase ?: "${config.name}-64"
 
     parameters.env.put('DIST_DIR', distDirectory)
     parameters.env.put('JAVA_HOME', getHomeDirectory())
@@ -97,7 +97,7 @@ def createBuildTask(tasksHolder, config) {
 
         workingDir buildDirectory
         executable getCmakeExecutable()
-        args(*(parameters.setupArguments + ['../..']))
+        args(*(parameters.setupArguments + (config.cmakeArguments ?: []) + ['../..']))
         environment parameters.env
     }
 

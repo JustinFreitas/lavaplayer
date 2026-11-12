@@ -38,13 +38,40 @@ set(CMAKE_CXX_FLAGS_RELEASE "${COMPILER_FLAGS} ${COMPILER_FLAGS_RELEASE}")
 
 include_directories("$ENV{JAVA_HOME}/include/")
 
+if(NOT DEFINED OPUS_VERSION)
+	set(OPUS_VERSION "1.6.1")
+endif()
+if(NOT DEFINED VORBIS_VERSION)
+	set(VORBIS_VERSION "1.3.7")
+endif()
+if(NOT DEFINED OGG_VERSION)
+	set(OGG_VERSION "1.3.6")
+endif()
+if(NOT DEFINED MPG123_VERSION)
+	set(MPG123_VERSION "1.33.7")
+endif()
+if(NOT DEFINED SAMPLERATE_VERSION)
+	set(SAMPLERATE_VERSION "0.2.2")
+endif()
+if(NOT DEFINED FDK_AAC_VERSION)
+	set(FDK_AAC_VERSION "3.0.0")
+endif()
+if(NOT DEFINED MPG123_LIB_DIR)
+	set(MPG123_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libs/64")
+endif()
+
 include_directories("${samplerate_SOURCE_DIR}/src")
-include_directories("../opus/opus-1.6.1/include")
-include_directories("../fdk-aac/libAACdec/include")
-include_directories("../fdk-aac/libSYS/include")
-include_directories("../vorbis/libvorbis-1.3.7/include")
-include_directories("../vorbis/libogg-1.3.6/include")
-link_directories("../libs/64")
+include_directories("../opus/opus-${OPUS_VERSION}/include")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../fdk-aac/cpp/libAACdec/include")
+	include_directories("../fdk-aac/cpp/libAACdec/include")
+	include_directories("../fdk-aac/cpp/libSYS/include")
+else()
+	include_directories("../fdk-aac/libAACdec/include")
+	include_directories("../fdk-aac/libSYS/include")
+endif()
+include_directories("../vorbis/libvorbis-${VORBIS_VERSION}/include")
+include_directories("../vorbis/libogg-${OGG_VERSION}/include")
+link_directories("${MPG123_LIB_DIR}")
 
 if (DEFINED ENV{DIST_DIR})
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "$ENV{DIST_DIR}")
@@ -52,9 +79,18 @@ if (DEFINED ENV{DIST_DIR})
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	add_library(connector SHARED samplerate.c fdk-aac.c vorbis.c opus.c mpg123.c)
+	add_library(connector SHARED samplerate.c fdk-aac.c vorbis.c opus.c mpg123.c versions.c)
 else()
-        add_library(connector SHARED samplerate.c fdk-aac.c vorbis.c opus.c mpg123.c ${SYSNAME}/statistics.c)
+	add_library(connector SHARED samplerate.c fdk-aac.c vorbis.c opus.c mpg123.c versions.c ${SYSNAME}/statistics.c)
 endif()
+
+target_compile_definitions(connector PRIVATE
+	OPUS_VERSION="${OPUS_VERSION}"
+	VORBIS_VERSION="${VORBIS_VERSION}"
+	OGG_VERSION="${OGG_VERSION}"
+	MPG123_VERSION="${MPG123_VERSION}"
+	SAMPLERATE_VERSION="${SAMPLERATE_VERSION}"
+	FDK_AAC_VERSION="${FDK_AAC_VERSION}"
+)
 
 target_link_libraries(connector samplerate fdk-aac vorbis opus mpg123)

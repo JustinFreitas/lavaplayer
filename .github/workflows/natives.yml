@@ -16,6 +16,7 @@ on:
     branches: [ '**' ]
     paths:
       - 'natives/**'
+      - 'gradle/libs.versions.toml'
       - '.github/workflows/natives.yml'
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
           - os: ubuntu-22.04
             identifier: linux-x86-64
             library: libconnector.so
-          - os: macos-latest
+          - os: macos-15-intel
             identifier: darwin
             library: libconnector.dylib
 
@@ -49,13 +50,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
-
-      # macOS runners ship CMake but not the autotools the opus/ogg/mpg123
-      # source builds invoke.
-      - name: Install build tools (macOS)
-        if: runner.os == 'macOS'
-        run: brew install automake autoconf libtool
 
       - name: Build natives (Windows/macOS)
         if: runner.os != 'Linux'
@@ -87,10 +81,22 @@ jobs:
             exit 1
           fi
           echo "Built $target ($(wc -c < "$target") bytes)"
+          if [ "${{ matrix.identifier }}" = "darwin" ]; then
+            file "$target"
+            lipo -info "$target"
+          fi
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: connector-${{ matrix.identifier }}
           path: natives-publish/src/main/resources/natives/${{ matrix.identifier }}/
+          if-no-files-found: error
+
+      - name: Upload native library (win-x86)
+        if: matrix.identifier == 'win-x86-64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: connector-win-x86
+          path: natives-publish/src/main/resources/natives/win-x86/
           if-no-files-found: error
