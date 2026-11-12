@@ -57,6 +57,16 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_vorb
 		return JNI_FALSE;
 	}
 
+	if (state->initialised) {
+		vorbis_block_clear(&state->block);
+		vorbis_dsp_clear(&state->dsp_state);
+		state->initialised = false;
+	}
+	if (state->info.rate != 0) {
+		vorbis_info_clear(&state->info);
+		vorbis_info_init(&state->info);
+	}
+
 	// Dummy comment instance - needs non-NULL vendor, otherwise headerin will reject setup (codebook) packet.
 	vorbis_comment comment;
 	vorbis_comment_init(&comment);

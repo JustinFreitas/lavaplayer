@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.sedmelluq.discord.lavaplayer.natives.mp3.Mp3Decoder.MPEG1_SAMPLES_PER_FRAME;
@@ -60,6 +61,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
     private int sampleRate;
     private int channelCount;
+    private long samplesPerFrame = MPEG1_SAMPLES_PER_FRAME;
     private AudioPipeline downstream;
     private Mp3Seeker seeker;
     private float volumeMultiplier = 1.0f;
@@ -108,6 +110,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
 
         sampleRate = Mp3Decoder.getFrameSampleRate(frameBuffer, 0);
         channelCount = Mp3Decoder.getFrameChannelCount(frameBuffer, 0);
+        samplesPerFrame = Mp3Decoder.getSamplesPerFrame(frameBuffer, 0);
         downstream = context != null ? AudioPipelineFactory.create(context, new PcmFormat(channelCount, sampleRate))
                 : null;
 
@@ -131,6 +134,15 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
      * @param frame The raw frame text, may be null
      * @return The value, or null if the frame is absent or malformed
      */
+    private static String txxxKey(String frame) {
+        if (frame == null) {
+            return null;
+        }
+
+        int separator = frame.indexOf('\0');
+        return separator >= 0 ? frame.substring(0, separator).trim() : null;
+    }
+
     private static String txxxValue(String frame) {
         if (frame == null) {
             return null;
@@ -209,7 +221,7 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
     public void seekToTimecode(long timecode) {
         try {
             long frameIndex = seeker.seekAndGetFrameIndex(timecode, inputStream);
-            long actualTimecode = frameIndex * MPEG1_SAMPLES_PER_FRAME * 1000 / sampleRate;
+            long actualTimecode = frameIndex * samplesPerFrame * 1000 / sampleRate;
             downstream.seekPerformed(timecode, actualTimecode);
 
             frameReader.nextFrame();
@@ -339,12 +351,15 @@ public class Mp3TrackProvider implements AudioTrackInfoProvider {
                     if (USER_TEXT_TAG.equals(header.id)) {
                         // Gain and peak arrive as separate TXXX frames, and every TXXX frame shares the same map
                         // key above, so each one that matters has to be kept aside as it goes past.
-                        String upper = text.toUpperCase();
+                        String key = txxxKey(text);
+                        if (key != null) {
+                            String upperKey = key.toUpperCase(Locale.ROOT);
 
-                        if (upper.contains(ReplayGainTools.TRACK_GAIN_TAG)) {
-                            replayGainTxxx = text;
-                        } else if (upper.contains(ReplayGainTools.TRACK_PEAK_TAG)) {
-                            replayGainPeakTxxx = text;
+                            if (ReplayGainTools.TRACK_GAIN_TAG.equals(upperKey)) {
+                                replayGainTxxx = text;
+                            } else if (ReplayGainTools.TRACK_PEAK_TAG.equals(upperKey)) {
+                                replayGainPeakTxxx = text;
+                            }
                         }
                     }
                 }

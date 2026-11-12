@@ -319,12 +319,15 @@ public class OggPacketInputStream extends InputStream {
             throw new IllegalStateException("Seek points have not been set.");
         }
 
+        if (seekPoints.isEmpty()) {
+            return 0;
+        }
+
         // Binary search for the seek point with the largest timecode that is smaller than or equal to the target timecode
         int low = 0;
-        int mid = 0;
         int high = seekPoints.size() - 1;
         while (low <= high) {
-            mid = (low + high) / 2;
+            int mid = (low + high) >>> 1;
             if (seekPoints.get(mid).getTimecode() <= timecode) {
                 low = mid + 1;
             } else {
@@ -332,12 +335,12 @@ public class OggPacketInputStream extends InputStream {
             }
         }
 
-        if (mid == 0) {
-            mid++;
-        }
-
-        OggSeekPoint seekPoint = seekPoints.get(mid);
+        int index = Math.max(0, high);
+        OggSeekPoint seekPoint = seekPoints.get(index);
         inputStream.seek(seekPoint.getPosition());
+        pageHeader = null;
+        bytesLeftInPacket = 0;
+        packetContinues = false;
         state = State.TRACK_SEEKING;
 
         return seekPoint.getTimecode();

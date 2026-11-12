@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static com.sedmelluq.discord.lavaplayer.natives.mp3.Mp3Decoder.MPEG1_SAMPLES_PER_FRAME;
-
 /**
  * Seeking support for VBR files with Xing header.
  */
@@ -27,13 +25,13 @@ public class Mp3XingSeeker implements Mp3Seeker {
     private final byte[] seekMapping;
     private final long duration;
 
-    private Mp3XingSeeker(int sampleRate, long firstFramePosition, long contentLength, long frameCount, long dataSize, byte[] seekMapping) {
+    private Mp3XingSeeker(int sampleRate, long samplesPerFrame, long firstFramePosition, long contentLength, long frameCount, long dataSize, byte[] seekMapping) {
         this.firstFramePosition = firstFramePosition;
         this.contentLength = contentLength;
         this.frameCount = frameCount;
         this.dataSize = dataSize;
         this.seekMapping = seekMapping;
-        this.duration = frameCount * MPEG1_SAMPLES_PER_FRAME * 1000L / sampleRate;
+        this.duration = frameCount * samplesPerFrame * 1000L / sampleRate;
     }
 
     /**
@@ -53,6 +51,7 @@ public class Mp3XingSeeker implements Mp3Seeker {
         }
 
         int sampleRate = Mp3Decoder.getFrameSampleRate(frameBuffer, 0);
+        long samplesPerFrame = Mp3Decoder.getSamplesPerFrame(frameBuffer, 0);
         long frameCount = frame.getInt(XING_OFFSET + 8);
         long dataSize = frame.getInt(XING_OFFSET + 12);
 
@@ -60,7 +59,7 @@ public class Mp3XingSeeker implements Mp3Seeker {
         frame.position(XING_OFFSET + 16);
         frame.get(seekMapping);
 
-        return new Mp3XingSeeker(sampleRate, firstFramePosition, contentLength, frameCount, dataSize, seekMapping);
+        return new Mp3XingSeeker(sampleRate, samplesPerFrame, firstFramePosition, contentLength, frameCount, dataSize, seekMapping);
     }
 
     @Override

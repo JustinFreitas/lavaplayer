@@ -195,11 +195,16 @@ public class HttpClientTools {
 
     public static void assertJsonContentType(ClassicHttpResponse response) throws IOException {
         if (!HttpClientTools.hasJsonContentType(response)) {
+            HttpEntity entity = response.getEntity();
             String content;
-            try {
-                content = EntityUtils.toString(response.getEntity());
-            } catch (ParseException e) {
-                content = "Unparseable entity: " + e.getMessage();
+            if (entity == null) {
+                content = null;
+            } else {
+                try {
+                    content = EntityUtils.toString(entity);
+                } catch (ParseException e) {
+                    content = "Unparseable entity: " + e.getMessage();
+                }
             }
 
             throw ExceptionTools.throwWithDebugInfo(

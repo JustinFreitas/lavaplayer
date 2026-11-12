@@ -20,13 +20,14 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDecoderLibrary_fill(JNIEnv *jni, jobject me, jlong instance, jobject direct_buffer, jint offset, jint length) {
-	if (instance == 0) return -1;
+	if (instance == 0 || direct_buffer == NULL) return -1;
 	UCHAR* base_buffer = (*jni)->GetDirectBufferAddress(jni, direct_buffer);
-	if (base_buffer == NULL) return -1;
+	jlong capacity = (*jni)->GetDirectBufferCapacity(jni, direct_buffer);
+	if (base_buffer == NULL || capacity < 0 || offset < 0 || length < offset || (jlong) length > capacity) return -1;
 	
 	UCHAR* buffer = base_buffer + offset;
-	UINT in_length = length - offset;
-	UINT in_left = length - offset;
+	UINT in_length = (UINT) (length - offset);
+	UINT in_left = (UINT) (length - offset);
 	
 	AAC_DECODER_ERROR error = aacDecoder_Fill((HANDLE_AACDECODER) instance, &buffer, &in_length, &in_left);
 	if (error != AAC_DEC_OK) {
@@ -37,9 +38,10 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_
 }
 
 CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDecoderLibrary_decode(JNIEnv *jni, jobject me, jlong instance, jobject direct_buffer, jint length, jboolean flush) {
-	if (instance == 0) return -1;
+	if (instance == 0 || direct_buffer == NULL || length < 0) return -1;
 	INT_PCM* buffer = (*jni)->GetDirectBufferAddress(jni, direct_buffer);
-	if (buffer == NULL) return -1;
+	jlong capacity = (*jni)->GetDirectBufferCapacity(jni, direct_buffer);
+	if (buffer == NULL || capacity < 0 || (jlong) length > capacity) return -1;
 
 	return aacDecoder_DecodeFrame((HANDLE_AACDECODER) instance, (INT_PCM*) buffer, length, flush ? AACDEC_FLUSH : 0);
 }

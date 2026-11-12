@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -164,13 +165,15 @@ public class MpegFileLoader {
     }
 
     private static String getMetadataName(String code) {
-        switch (code.toLowerCase()) {
+        switch (code.toLowerCase(Locale.ROOT)) {
             case "\u00a9art":
                 return "Artist";
             case "\u00a9nam":
                 return "Title";
             case "replaygain_track_gain":
                 return "REPLAYGAIN_TRACK_GAIN";
+            case "replaygain_track_peak":
+                return "REPLAYGAIN_TRACK_PEAK";
             case "r128_track_gain":
                 return "R128_TRACK_GAIN";
             default:

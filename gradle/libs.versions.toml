@@ -40,6 +40,8 @@ objenesis = "3.6"
 grgit = "5.3.3"
 # https://mvnrepository.com/artifact/de.undercouch/gradle-download-task
 download = "5.7.0"
+# https://mvnrepository.com/artifact/org.jacoco/org.jacoco.agent
+jacoco = "0.8.16"
 
 # Natives
 # https://github.com/xiph/opus

@@ -22,15 +22,17 @@ CONNECTOR_EXPORT jint JNICALL Java_com_sedmelluq_discord_lavaplayer_natives_samp
 		jfloatArray in_array, jint in_offset, jint in_length, jfloatArray out_array, jint out_offset, jint out_length, jboolean end_of_input,
 		jdouble source_ratio, jintArray progress_array) {
 
-	if (instance == 0) {
+	if (instance == 0 || in_array == NULL || out_array == NULL || progress_array == NULL) {
 		return -1;
 	}
 
 	jsize in_len = (*jni)->GetArrayLength(jni, in_array);
 	jsize out_len = (*jni)->GetArrayLength(jni, out_array);
+	jsize progress_len = (*jni)->GetArrayLength(jni, progress_array);
 
-	if (in_offset < 0 || in_length < 0 || (in_offset + in_length) > in_len ||
-		out_offset < 0 || out_length < 0 || (out_offset + out_length) > out_len) {
+	if (in_offset < 0 || in_length < 0 || in_length > in_len - in_offset ||
+		out_offset < 0 || out_length < 0 || out_length > out_len - out_offset ||
+		progress_len < 2) {
 		jclass exClass = (*jni)->FindClass(jni, "java/lang/ArrayIndexOutOfBoundsException");
 		if (exClass != NULL) {
 			(*jni)->ThrowNew(jni, exClass, "JNI bounds violation");

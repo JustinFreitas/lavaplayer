@@ -18,6 +18,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.io.DataInput;
@@ -163,35 +164,47 @@ public class BandcampAudioSourceManager implements AudioSourceManager, HttpConfi
             String artist = trackListInfo.get("artist").safeText();
             String artworkUrl = extractArtwork(trackListInfo);
 
-            return extractTrack(trackListInfo.get("trackinfo").index(0), urlInfo.baseUrl, artist, artworkUrl, trackListInfo.get("current").get("isrc").text());
+            AudioTrack track = extractTrack(trackListInfo.get("trackinfo").index(0), urlInfo.baseUrl, artist, artworkUrl, trackListInfo.get("current").get("isrc").text());
+            return track != null ? track : AudioReference.NO_TRACK;
         });
     }
 
     private AudioItem loadAlbum(UrlInfo urlInfo) {
         return extractFromPage(urlInfo.fullUrl, (httpClient, text) -> {
             JsonBrowser trackListInfo = readTrackListInformation(text);
-            String artist = trackListInfo.get("artist").text();
+            String artist = trackListInfo.get("artist").safeText();
             String artworkUrl = extractArtwork(trackListInfo);
 
             List<AudioTrack> tracks = new ArrayList<>();
             for (JsonBrowser trackInfo : trackListInfo.get("trackinfo").values()) {
                 // album track json does not include isrc
-                tracks.add(extractTrack(trackInfo, urlInfo.baseUrl, artist, artworkUrl, null));
+                AudioTrack track = extractTrack(trackInfo, urlInfo.baseUrl, artist, artworkUrl, null);
+                if (track != null) {
+                    tracks.add(track);
+                }
             }
 
             JsonBrowser albumInfo = readAlbumInformation(text);
-            return new BasicAudioPlaylist(albumInfo.get("current").get("title").text(), tracks, null, false);
+            return new BasicAudioPlaylist(albumInfo.get("current").get("title").safeText(), tracks, null, false);
         });
     }
 
     private AudioTrack extractTrack(JsonBrowser trackInfo, String bandUrl, String artist, String artworkUrl, String isrc) {
-        String trackPageUrl = bandUrl + trackInfo.get("title_link").text();
+        String titleLink = trackInfo.get("title_link").text();
+        if (titleLink == null) {
+            return null;
+        }
+
+        String trackPageUrl = bandUrl + titleLink;
+        JsonBrowser durationField = trackInfo.get("duration");
+        Double duration = durationField.isNull() ? null : durationField.as(Double.class);
+        long durationMs = duration != null ? (long) (duration * 1000.0) : Units.DURATION_MS_UNKNOWN;
 
         return new BandcampAudioTrack(new AudioTrackInfo(
-            trackInfo.get("title").text(),
+            trackInfo.get("title").safeText(),
             artist,
-            (long) (trackInfo.get("duration").as(Double.class) * 1000.0),
-            bandUrl + trackInfo.get("title_link").text(),
+            durationMs,
+            trackPageUrl,
             false,
             trackPageUrl,
             artworkUrl,
@@ -206,7 +219,7 @@ public class BandcampAudioSourceManager implements AudioSourceManager, HttpConfi
             throw new FriendlyException("Album information not found on the Bandcamp page.", SUSPICIOUS, null);
         }
 
-        albumInfoJson = albumInfoJson.replace("&quot;", "\"");
+        albumInfoJson = Parser.unescapeEntities(albumInfoJson, false);
         return JsonBrowser.parse(albumInfoJson);
     }
 
@@ -217,7 +230,7 @@ public class BandcampAudioSourceManager implements AudioSourceManager, HttpConfi
             throw new FriendlyException("Track information not found on the Bandcamp page.", SUSPICIOUS, null);
         }
 
-        trackInfoJson = trackInfoJson.replace("&quot;", "\"");
+        trackInfoJson = Parser.unescapeEntities(trackInfoJson, false);
         return JsonBrowser.parse(trackInfoJson);
     }
 

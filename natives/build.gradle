@@ -70,7 +70,7 @@ tasks.register('load') {
                 dest downloadPath
             }
 
-            verifyFileSha256(file(downloadPath), "8b73e924bd9f12ea0dd1d809e5acd6805e82dc184bc55e99f7964f6850e378ef")
+            verifyFileSha256(file(downloadPath), "36d92cbb3732392d963944d0e962aa361b1edf0495476f37da753a0e46f73503")
 
             copy {
                 from zipTree(file(downloadPath))
@@ -139,7 +139,7 @@ tasks.register('load') {
                 dest downloadPath
             }
 
-            verifyFileSha256(file(downloadPath), "929a7c18ba662b8927aed4de229ad9ae8ab2b4806dd0f30b90113eb1b4e2195a")
+            verifyFileSha256(file(downloadPath), "31d0e35a4ca567ec9b5ebda6c3062bb4435d6d3eacd6ef0d95cadd7854dc03ee")
 
             copy {
                 from tarTree(file(downloadPath))

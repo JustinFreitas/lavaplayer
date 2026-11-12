@@ -121,10 +121,10 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
     private boolean attemptConnect(boolean skipStatusCheck, boolean retryOnServerError) throws IOException {
         HttpGet request = getConnectRequest();
 
-        // A subclass may narrow the request by rewriting the URL, which the response does not advertise.
+        // A subclass may narrow the request by rewriting the URL, or this stream may request a byte range from position > 0.
         boolean partialRequest;
         try {
-            partialRequest = !request.getUri().equals(contentUrl);
+            partialRequest = position > 0 || request.containsHeader(HttpHeaders.RANGE) || !request.getUri().equals(contentUrl);
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }
@@ -163,7 +163,8 @@ public class PersistentHttpStream extends SeekableInputStream implements AutoClo
 
         currentContent = createContentInputStream(currentResponse);
 
-        if (contentLength == Units.CONTENT_LENGTH_UNKNOWN && !partialRequest) {
+        if (contentLength == Units.CONTENT_LENGTH_UNKNOWN && !partialRequest
+                && currentResponse.getCode() != HttpStatus.SC_PARTIAL_CONTENT) {
             Header header = currentResponse.getFirstHeader("Content-Length");
 
             if (header != null) {

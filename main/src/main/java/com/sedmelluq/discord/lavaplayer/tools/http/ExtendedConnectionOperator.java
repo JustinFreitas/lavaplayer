@@ -148,11 +148,13 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         boolean last
     ) throws IOException {
         Socket socket = socketFactory.createSocket(context);
-        configureSocket(socket, socketConfig, context);
+        boolean bound = false;
 
         try {
+            configureSocket(socket, socketConfig, context);
             socket = socketFactory.connectSocket(connectTimeout, socket, host, remoteAddress, localAddress, context);
             connection.bind(socket);
+            bound = true;
             return true;
         } catch (final SocketTimeoutException ex) {
             if (last) {
@@ -168,6 +170,13 @@ public class ExtendedConnectionOperator implements HttpClientConnectionOperator 
         } catch (final NoRouteToHostException ex) {
             if (last) {
                 throw ex;
+            }
+        } finally {
+            if (!bound && socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ignored) {
+                }
             }
         }
 

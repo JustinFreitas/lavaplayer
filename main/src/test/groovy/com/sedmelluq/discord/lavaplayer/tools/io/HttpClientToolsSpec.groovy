@@ -57,4 +57,19 @@ class HttpClientToolsSpec extends Specification {
         expect:
         HttpClientTools.getRedirectLocation("http://old.example.com/resource", response) == "https://new.example.com/resource"
     }
+
+    def "assertJsonContentType handles null entity without NullPointerException"() {
+        given:
+        def response = Mock(org.apache.hc.core5.http.ClassicHttpResponse)
+        response.getFirstHeader("Content-Type") >> null
+        response.getEntity() >> null
+
+        when:
+        HttpClientTools.assertJsonContentType(response)
+
+        then:
+        def ex = thrown(RuntimeException)
+        !(ex instanceof NullPointerException)
+        ex.message.contains("Expected JSON content type")
+    }
 }

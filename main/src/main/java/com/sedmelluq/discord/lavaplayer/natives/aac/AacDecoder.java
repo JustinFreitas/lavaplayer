@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -51,7 +52,11 @@ public class AacDecoder extends NativeResourceHolder {
      */
     public AacDecoder() {
         library = AacDecoderLibrary.getInstance();
-        instance = new AtomicLong(library.create(TRANSPORT_NONE));
+        long handle = library.create(TRANSPORT_NONE);
+        if (handle == 0) {
+            throw new IllegalStateException("Failed to create an AAC decoder instance");
+        }
+        instance = new AtomicLong(handle);
         registerCleanup(new Destroyer(library, instance));
     }
 
@@ -130,12 +135,21 @@ public class AacDecoder extends NativeResourceHolder {
     private synchronized int configureRaw(long buffer) {
         checkNotReleased();
 
+        long handle = instance.get();
+        if (handle == 0) {
+            throw new IllegalStateException("AAC decoder instance is not initialized.");
+        }
+
         if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
             buffer = Long.reverseBytes(buffer);
         }
 
         lastConfig = buffer;
-        return library.configure(instance.get(), buffer);
+        try {
+            return library.configure(handle, buffer);
+        } finally {
+            Reference.reachabilityFence(this);
+        }
     }
 
     private static boolean isSbrOrPs(int objectType) {
@@ -209,7 +223,17 @@ public class AacDecoder extends NativeResourceHolder {
             throw new IllegalArgumentException("Buffer argument must be a direct buffer.");
         }
 
-        int readBytes = library.fill(instance.get(), buffer, buffer.position(), buffer.limit());
+        long handle = instance.get();
+        if (handle == 0) {
+            throw new IllegalStateException("AAC decoder instance is not initialized.");
+        }
+
+        int readBytes;
+        try {
+            readBytes = library.fill(handle, buffer, buffer.position(), buffer.limit());
+        } finally {
+            Reference.reachabilityFence(this);
+        }
         if (readBytes < 0) {
             throw new IllegalStateException("Filling decoder failed with error " + (-readBytes));
         }
@@ -237,28 +261,46 @@ public class AacDecoder extends NativeResourceHolder {
             throw new IllegalArgumentException("Buffer argument must be a direct buffer.");
         }
 
-        int result = library.decode(instance.get(), buffer, buffer.capacity(), flush);
+        long handle = instance.get();
+        if (handle == 0) {
+            throw new IllegalStateException("AAC decoder instance is not initialized.");
+        }
 
-        if (result == 0) {
-            return true;
-        } else if (result == ERROR_NOT_ENOUGH_BITS) {
-            return false;
-        } else if (result >= DECODE_ERROR_START && result <= DECODE_ERROR_END) {
-            // 0x4xxx errors are per-frame, so we can try to ignore the error and resume from the next frame
-            log.warn("Skipping corrupt AAC frame, decoder returned error {}.", result);
-            resetInstance();
-            return false;
+        int result;
+        try {
+            result = library.decode(handle, buffer, buffer.capacity(), flush);
+
+            if (result == 0) {
+                return true;
+            } else if (result == ERROR_NOT_ENOUGH_BITS) {
+                return false;
+            } else if (result >= DECODE_ERROR_START && result <= DECODE_ERROR_END) {
+                // 0x4xxx errors are per-frame, so we can try to ignore the error and resume from the next frame
+                log.warn("Skipping corrupt AAC frame, decoder returned error {}.", result);
+                resetInstance();
+                return false;
+            }
+        } finally {
+            Reference.reachabilityFence(this);
         }
 
         throw new IllegalStateException("Error from decoder " + result);
     }
 
     private void resetInstance() {
-        library.destroy(instance.get());
-        instance.set(library.create(TRANSPORT_NONE));
+        long oldHandle = instance.getAndSet(0);
+        if (oldHandle != 0) {
+            library.destroy(oldHandle);
+        }
+
+        long newHandle = library.create(TRANSPORT_NONE);
+        if (newHandle == 0) {
+            throw new IllegalStateException("Failed to recreate AAC decoder instance.");
+        }
+        instance.set(newHandle);
 
         if (lastConfig != null) {
-            library.configure(instance.get(), lastConfig);
+            library.configure(newHandle, lastConfig);
         }
     }
 
@@ -271,15 +313,26 @@ public class AacDecoder extends NativeResourceHolder {
     public synchronized StreamInfo resolveStreamInfo() {
         checkNotReleased();
 
-        int result = library.decode(instance.get(), NO_BUFFER, 0, false);
-
-        if (result == ERROR_NOT_ENOUGH_BITS) {
-            return null;
-        } else if (result != ERROR_OUTPUT_BUFFER_TOO_SMALL) {
-            throw new IllegalStateException("Expected decoding to halt, got: " + result);
+        long handle = instance.get();
+        if (handle == 0) {
+            throw new IllegalStateException("AAC decoder instance is not initialized.");
         }
 
-        long combinedValue = library.getStreamInfo(instance.get());
+        long combinedValue;
+        try {
+            int result = library.decode(handle, NO_BUFFER, 0, false);
+
+            if (result == ERROR_NOT_ENOUGH_BITS) {
+                return null;
+            } else if (result != ERROR_OUTPUT_BUFFER_TOO_SMALL) {
+                throw new IllegalStateException("Expected decoding to halt, got: " + result);
+            }
+
+            combinedValue = library.getStreamInfo(handle);
+        } finally {
+            Reference.reachabilityFence(this);
+        }
+
         if (combinedValue == 0) {
             throw new IllegalStateException("Native library failed to detect stream info.");
         }

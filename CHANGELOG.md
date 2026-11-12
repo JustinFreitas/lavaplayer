@@ -1,7 +1,15 @@
 # Change Log
 
 ## [2.2.7_31] - 2026-11-11
-* Updated Gradle Wrapper to `9.9.1` (was `9.9.0`)
+* Mapped `replaygain_track_peak` to `REPLAYGAIN_TRACK_PEAK` in `MpegFileLoader` so positive ReplayGain on MP4/M4A tracks is peak-limited
+* Fixed floor binary search in `OggPacketInputStream.seek()` (eliminating `mid == 0` off-by-one/OOB on 0/1-page streams) and filtered non-audio header/continuation pages in `OggPageScanner.createSeekTable()`
+* Delegated mid-track seeks to the active chained sub-stream handler and reset `replayGainApplied`/`replayGainDb` when a chained sub-stream has no ReplayGain in `OggAudioTrack`
+* Used frame-header `samplesPerFrame` instead of hardcoded `MPEG1_SAMPLES_PER_FRAME` for MPEG-2/2.5 MP3 duration and seeking, and matched exact NUL-delimited `TXXX` ReplayGain keys under `Locale.ROOT` in `Mp3TrackProvider`
+* Added `Reference.reachabilityFence(this)` guards and zero-handle checks in `AacDecoder`
+* Unescaped HTML entities via `Parser.unescapeEntities` and guarded null `duration`/`title_link` on pre-order tracks in `BandcampAudioSourceManager`
+* Fixed range reconnect `partialRequest` check in `PersistentHttpStream`, closed unbound sockets on `configureSocket` failure in `ExtendedConnectionOperator`, and guarded null `HttpEntity` in `HttpClientTools.assertJsonContentType()`
+* Hardened JNI C codecs (`connector.h` `_MSC_VER`, `fdk-aac.c`/`opus.c` direct buffer null & capacity checks, `samplerate.c` overflow & `progress_array` bounds checks, `vorbis.c` re-init cleanup), updated `natives/build.gradle` SHA-256 hashes for `fdk-aac 3.0.0` and `mpg123 1.33.7`, and removed tracked IDE build artifacts under `natives-publish/bin/`
+* Referenced `libs.versions.commons.codec` in `build.gradle.kts`, updated JaCoCo tool version to `0.8.16`, and updated Gradle Wrapper to `9.9.1` (was `9.9.0`)
 
 ## [2.2.7_30] - 2026-11-09
 * Initialized `OggTrackHandler` before `executeProcessingLoop` and moved `try-with-resources` outside the processing loop in `OggAudioTrack` so initial start-offset and mid-track seeks succeed without closing the native decoder

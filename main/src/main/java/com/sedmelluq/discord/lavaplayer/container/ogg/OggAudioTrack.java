@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.SUSPICIOUS;
 
@@ -44,78 +45,91 @@ public class OggAudioTrack extends BaseAudioTrack {
             throw new IOException("Stream terminated before the first packet.");
         }
 
-        OggTrackHandler handler = blueprint.loadTrackHandler(packetInputStream);
+        OggTrackHandler initialHandler = blueprint.loadTrackHandler(packetInputStream);
+        AtomicReference<OggTrackHandler> currentHandlerRef = new AtomicReference<>(initialHandler);
+        AtomicReference<OggTrackBlueprint> currentBlueprintRef = new AtomicReference<>(blueprint);
         AtomicBoolean initialised = new AtomicBoolean(true);
 
         // Unlike the other containers, OGG only learns its gain once the handler is initialised, so it reports for
         // itself rather than letting the executor report null on entry.
         localExecutor.deferReplayGainReport();
 
-        try (OggTrackHandler activeHandler = handler) {
-            activeHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
+        try {
+            initialHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
 
-            Float gainDb = activeHandler.getReplayGainDb();
-            if (gainDb != null) {
-                this.replayGainApplied = true;
-                this.replayGainDb = gainDb;
-            }
-
+            Float gainDb = initialHandler.getReplayGainDb();
+            applyReplayGain(gainDb);
             localExecutor.notifyReplayGainResolved(gainDb);
 
             localExecutor.executeProcessingLoop(() -> {
                 try {
-                    processTrackLoop(packetInputStream, localExecutor, activeHandler, blueprint, initialised);
+                    processTrackLoop(packetInputStream, localExecutor, currentHandlerRef, currentBlueprintRef, initialised);
                 } catch (IOException e) {
                     throw new FriendlyException("Stream broke when playing OGG track.", SUSPICIOUS, e);
                 }
-            }, activeHandler::seekToTimecode, true);
+            }, timecode -> {
+                OggTrackHandler active = currentHandlerRef.get();
+                if (active != null) {
+                    active.seekToTimecode(timecode);
+                }
+            }, true);
+        } finally {
+            OggTrackHandler active = currentHandlerRef.getAndSet(null);
+            if (active != null) {
+                try {
+                    active.close();
+                } catch (IOException e) {
+                    log.debug("Failed to close Ogg handler", e);
+                }
+            }
         }
     }
 
     private void processTrackLoop(OggPacketInputStream packetInputStream,
                                   LocalAudioTrackExecutor localExecutor,
-                                  OggTrackHandler handler,
-                                  OggTrackBlueprint blueprint,
+                                  AtomicReference<OggTrackHandler> currentHandlerRef,
+                                  AtomicReference<OggTrackBlueprint> currentBlueprintRef,
                                   AtomicBoolean initialised) throws IOException, InterruptedException {
-        OggTrackHandler currentHandler = handler;
-        try {
-            while (blueprint != null) {
-                // fix: only initialise once to avoid resetting the reported playback position
-                if (initialised.compareAndSet(false, true)) {
-                    currentHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
+        OggTrackBlueprint blueprint = currentBlueprintRef.get();
+        while (blueprint != null) {
+            OggTrackHandler currentHandler = currentHandlerRef.get();
+            // fix: only initialise once to avoid resetting the reported playback position
+            if (initialised.compareAndSet(false, true)) {
+                currentHandler.initialise(localExecutor.getProcessingContext(), 0, 0);
 
-                    Float gainDb = currentHandler.getReplayGainDb();
-                    if (gainDb != null) {
-                        this.replayGainApplied = true;
-                        this.replayGainDb = gainDb;
-                    }
+                Float gainDb = currentHandler.getReplayGainDb();
+                applyReplayGain(gainDb);
 
-                    // Only the first stream in the chain is reported (the executor ignores later calls); chained
-                    // sub-streams still update replayGainDb for anything reading it directly.
-                    localExecutor.notifyReplayGainResolved(gainDb);
-                }
-
-                currentHandler.provideFrames();
-                blueprint = OggTrackLoader.loadTrackBlueprint(packetInputStream);
-
-                if (blueprint != null) {
-                    try {
-                        currentHandler.close();
-                    } catch (IOException e) {
-                        log.debug("Failed to close chained Ogg handler", e);
-                    }
-                    currentHandler = blueprint.loadTrackHandler(packetInputStream);
-                    initialised.set(false);
-                }
+                // Only the first stream in the chain is reported (the executor ignores later calls); chained
+                // sub-streams still update replayGainDb for anything reading it directly.
+                localExecutor.notifyReplayGainResolved(gainDb);
             }
-        } finally {
-            if (currentHandler != null && currentHandler != handler) {
+
+            currentHandler.provideFrames();
+            OggTrackBlueprint nextBlueprint = OggTrackLoader.loadTrackBlueprint(packetInputStream);
+
+            if (nextBlueprint != null) {
                 try {
                     currentHandler.close();
                 } catch (IOException e) {
-                    log.debug("Failed to close final chained Ogg handler", e);
+                    log.debug("Failed to close chained Ogg handler", e);
                 }
+                currentBlueprintRef.set(nextBlueprint);
+                currentHandlerRef.set(nextBlueprint.loadTrackHandler(packetInputStream));
+                initialised.set(false);
             }
+
+            blueprint = nextBlueprint;
+        }
+    }
+
+    private void applyReplayGain(Float gainDb) {
+        if (gainDb != null) {
+            this.replayGainApplied = true;
+            this.replayGainDb = gainDb;
+        } else {
+            this.replayGainApplied = false;
+            this.replayGainDb = null;
         }
     }
 

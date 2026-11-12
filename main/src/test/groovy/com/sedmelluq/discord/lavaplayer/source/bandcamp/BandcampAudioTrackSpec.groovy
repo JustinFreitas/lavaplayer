@@ -77,4 +77,31 @@ class BandcampAudioTrackSpec extends Specification {
         ex.severity == com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.SUSPICIOUS
         ex.message == "Track media stream URL not found on Bandcamp page."
     }
+
+    def "readTrackListInformation unescapes HTML entities and extractTrack guards null duration on pre-order tracks"() {
+        given:
+        def sourceManager = new BandcampAudioSourceManager()
+        def htmlContent = """
+            <html>
+                <head>
+                    <script data-tralbum="{&quot;artist&quot;:&quot;Simon &amp; Garfunkel&quot;,&quot;current&quot;:{&quot;title&quot;:&quot;Collector&#39;s Album &amp; More&quot;},&quot;trackinfo&quot;:[{&quot;title&quot;:&quot;Don&#39;t Stop &amp; Listen&quot;,&quot;title_link&quot;:&quot;/track/dont-stop&quot;,&quot;duration&quot;:null},{&quot;title&quot;:&quot;Unlinked Bonus&quot;,&quot;title_link&quot;:null,&quot;duration&quot;:null}]}"></script>
+                </head>
+            </html>
+        """
+
+        when:
+        def info = sourceManager.readTrackListInformation(htmlContent)
+        def artist = info.get("artist").safeText()
+        def playablePreorder = sourceManager.extractTrack(info.get("trackinfo").index(0), "https://example.bandcamp.com", artist, null, null)
+        def unlinkedTrack = sourceManager.extractTrack(info.get("trackinfo").index(1), "https://example.bandcamp.com", artist, null, null)
+
+        then:
+        artist == "Simon & Garfunkel"
+        info.get("current").get("title").safeText() == "Collector's Album & More"
+        playablePreorder != null
+        playablePreorder.info.title == "Don't Stop & Listen"
+        playablePreorder.info.author == "Simon & Garfunkel"
+        playablePreorder.info.length == com.sedmelluq.discord.lavaplayer.tools.Units.DURATION_MS_UNKNOWN
+        unlinkedTrack == null
+    }
 }

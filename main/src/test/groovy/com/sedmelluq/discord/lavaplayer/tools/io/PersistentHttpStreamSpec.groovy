@@ -248,4 +248,48 @@ class PersistentHttpStreamSpec extends Specification {
         stream.currentContent == null
         stream.getCurrentResponse() == null
     }
+
+    def "reconnecting at position > 0 does not overwrite unknown contentLength with partial response Content-Length"() {
+        given:
+        def response1 = Mock(ClassicHttpResponse)
+        def entity1 = Mock(HttpEntity)
+        def contentStream1 = Mock(InputStream)
+
+        // First response is chunked (no Content-Length header), reads 1 byte then resets
+        response1.getCode() >> 200
+        response1.getEntity() >> entity1
+        entity1.getContent() >> contentStream1
+        response1.getFirstHeader("Content-Length") >> null
+        int reads = 0
+        contentStream1.read(_ as byte[], _ as int, _ as int) >> { byte[] b, int off, int len ->
+            if (reads++ == 0) {
+                b[off] = (byte) 7
+                return 1
+            }
+            throw new SocketException("Connection reset")
+        }
+
+        def response2 = Mock(ClassicHttpResponse)
+        def entity2 = Mock(HttpEntity)
+        def contentStream2 = new ByteArrayInputStream([8, 9] as byte[])
+
+        // Second response at Range: bytes=1- returns remaining length 2, NOT total resource length
+        response2.getCode() >> 206
+        response2.getEntity() >> entity2
+        entity2.getContent() >> contentStream2
+        response2.getFirstHeader("Content-Length") >> new BasicHeader("Content-Length", "2")
+
+        def stream = new PersistentHttpStream(httpInterface, uri, null)
+
+        when:
+        int first = stream.read()
+        int second = stream.read()
+
+        then:
+        1 * httpInterface.execute({ HttpGet req -> !req.containsHeader("Range") }) >> response1
+        1 * httpInterface.execute({ HttpGet req -> req.getFirstHeader("Range")?.value == "bytes=1-" }) >> response2
+        first == 7
+        second == 8
+        stream.contentLength == Units.CONTENT_LENGTH_UNKNOWN
+    }
 }

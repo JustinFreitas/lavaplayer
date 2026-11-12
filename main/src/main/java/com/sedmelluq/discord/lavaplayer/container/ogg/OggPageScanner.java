@@ -82,9 +82,11 @@ public class OggPageScanner {
                 if (attemptReadHeader(buffer) && streamSerial == targetSerial) {
                     long position = byteStreamPosition;
                     long granulePosition = Long.reverseBytes(reversedPosition);
-                    long timecode = granulePosition / (sampleRate / 1000);
-                    pageSequence++;
-                    seekPoints.add(new OggSeekPoint(position, granulePosition, timecode, pageSequence));
+                    if (granulePosition > 0 && (flags & OggPageHeader.FLAG_CONTINUATION) == 0) {
+                        long timecode = granulePosition / (sampleRate / 1000);
+                        pageSequence++;
+                        seekPoints.add(new OggSeekPoint(position, granulePosition, timecode, pageSequence));
+                    }
                 }
             }
 

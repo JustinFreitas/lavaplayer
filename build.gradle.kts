@@ -1,4 +1,3 @@
-
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.ajoberstar.grgit.Grgit
 
@@ -23,6 +22,9 @@ tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val (gitVersion, release) = versionFromGit()
 logger.lifecycle("Version: $gitVersion (release: $release)")
 
+val commonsCodecVersion = libs.versions.commons.codec.get()
+val jacocoToolVersion = libs.versions.jacoco.get()
+
 allprojects {
     group = "com.github.JustinFreitas.lavaplayer"
     version = gitVersion
@@ -36,7 +38,7 @@ allprojects {
 
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("commons-codec:commons-codec")).using(module("commons-codec:commons-codec:1.22.0"))
+            substitute(module("commons-codec:commons-codec")).using(module("commons-codec:commons-codec:$commonsCodecVersion"))
         }
     }
 }
@@ -49,6 +51,10 @@ subprojects {
     apply<JavaPlugin>()
     apply<MavenPublishPlugin>()
     apply(plugin = "jacoco")
+
+    configure<JacocoPluginExtension> {
+        toolVersion = jacocoToolVersion
+    }
 
     tasks.withType<JacocoReport> {
         reports {
