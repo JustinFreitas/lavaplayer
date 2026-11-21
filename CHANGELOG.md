@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.2.7_33] - 2026-11-21
+* Updated library `ch.qos.logback:logback-classic` to `1.6.8` (was `1.6.6`)
+* Updated Gradle Wrapper to `9.9.2` (was `9.9.1`)
+
 ## [2.2.7_32] - 2026-11-12
 * Fixed `OPUS_GET_CHANNELS` undefined symbol regression in `natives/connector/opus.c` by tracking channel counts in `opus_encoder_state_t` and `opus_decoder_state_t` JNI state wrappers
 * Adapted `natives/fdk-aac/CMakeLists.txt` and `natives/connector/CMakeLists.txt` for `mstorsjo/fdk-aac` `3.0.0` `cpp/` source layout and embedded codec version metadata (`connector_codec_versions`) in `natives/connector/versions.c`
