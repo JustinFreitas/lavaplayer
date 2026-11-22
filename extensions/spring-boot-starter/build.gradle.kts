@@ -4,6 +4,6 @@ plugins {
 
 dependencies {
     api(projects.main)
-    implementation("org.springframework.boot:spring-boot-autoconfigure:4.1.2")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:4.1.2")
+    implementation(libs.spring.boot.autoconfigure)
+    annotationProcessor(libs.spring.boot.configuration.processor)
 }

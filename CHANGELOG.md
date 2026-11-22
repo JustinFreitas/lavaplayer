@@ -2,6 +2,7 @@
 
 ## [2.2.7_33] - 2026-11-21
 * Updated library `ch.qos.logback:logback-classic` to `1.6.8` (was `1.6.6`)
+* Updated `org.springframework.boot:spring-boot-autoconfigure` and `spring-boot-configuration-processor` to `4.2.0` (was `4.1.2`) and moved them to `gradle/libs.versions.toml`
 * Updated Gradle Wrapper to `9.9.2` (was `9.9.1`)
 
 ## [2.2.7_32] - 2026-11-12

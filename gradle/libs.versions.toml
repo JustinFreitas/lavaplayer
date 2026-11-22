@@ -42,6 +42,8 @@ grgit = "5.3.3"
 download = "5.7.0"
 # https://mvnrepository.com/artifact/org.jacoco/org.jacoco.agent
 jacoco = "0.8.16"
+# https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-autoconfigure
+spring-boot = "4.2.0"
 
 # Natives
 # https://github.com/xiph/opus
@@ -77,6 +79,8 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
 objenesis = { group = "org.objenesis", name = "objenesis", version.ref = "objenesis" }
+spring-boot-autoconfigure = { group = "org.springframework.boot", name = "spring-boot-autoconfigure", version.ref = "spring-boot" }
+spring-boot-configuration-processor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor", version.ref = "spring-boot" }
 
 [plugins]
 maven-publish-base = { id = "com.vanniktech.maven.publish.base", version.ref = "maven-publish-plugin" }
