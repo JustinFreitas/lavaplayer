@@ -220,8 +220,8 @@ jobs:
 
       - name: Merge to main and Tag
         run: |
-          git checkout main
-          git pull origin main
+          git fetch origin main
+          git checkout -B main origin/main
           git merge ${{ needs.check-dependencies.outputs.branch_name }} --no-ff -m "Merge branch '${{ needs.check-dependencies.outputs.branch_name }}' into main"
           git tag -a "${{ needs.check-dependencies.outputs.next_version }}" -m "Release version ${{ needs.check-dependencies.outputs.next_version }}"
           git push origin main
