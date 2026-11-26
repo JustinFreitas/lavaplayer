@@ -22,20 +22,20 @@ jobs:
       branch_name: ${{ steps.commit-changes.outputs.branch_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 25
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run Dependency Scan
         run: ./gradlew dependencyUpdates --no-daemon
@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload changes metadata
         if: steps.run-script.outputs.updated == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency_changes
           path: build/dependency_changes.json
@@ -72,26 +72,26 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.check-dependencies.outputs.branch_name }}
           token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 25
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Build natives (Windows)
         run: ./gradlew :natives:compileNatives --no-daemon
 
       - name: Upload Windows connector
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: connector-win-x86-64
           path: natives-publish/src/main/resources/natives/win-x86-64/connector.dll
@@ -102,20 +102,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.check-dependencies.outputs.branch_name }}
           token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 25
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Install build tools
         run: |
@@ -126,7 +126,7 @@ jobs:
         run: ./gradlew :natives:compileNatives --no-daemon
 
       - name: Upload Linux connector
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: connector-linux-x86-64
           path: natives-publish/src/main/resources/natives/linux-x86-64/libconnector.so
@@ -137,20 +137,20 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.check-dependencies.outputs.branch_name }}
           token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 25
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Install build tools
         run: brew install automake autoconf libtool
@@ -159,7 +159,7 @@ jobs:
         run: ./gradlew :natives:compileNatives --no-daemon
 
       - name: Upload macOS connector
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: connector-darwin
           path: natives-publish/src/main/resources/natives/darwin/libconnector.dylib
@@ -170,34 +170,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.check-dependencies.outputs.branch_name }}
           token: ${{ secrets.PIPELINE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Download changes metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dependency_changes
           path: build
 
       - name: Download Windows connector
         if: needs.check-dependencies.outputs.natives_updated == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: connector-win-x86-64
           path: natives-publish/src/main/resources/natives/win-x86-64
 
       - name: Download Linux connector
         if: needs.check-dependencies.outputs.natives_updated == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: connector-linux-x86-64
           path: natives-publish/src/main/resources/natives/linux-x86-64
 
       - name: Download macOS connector
         if: needs.check-dependencies.outputs.natives_updated == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: connector-darwin
           path: natives-publish/src/main/resources/natives/darwin

@@ -12,6 +12,11 @@ name: Build Natives
 
 on:
   workflow_dispatch:
+    inputs:
+      create_pr:
+        description: 'Open a pull request with the freshly built native binaries'
+        type: boolean
+        default: false
   push:
     branches: [ '**' ]
     paths:
@@ -107,3 +112,40 @@ jobs:
           name: connector-win-x86
           path: natives-publish/src/main/resources/natives/win-x86/
           if-no-files-found: error
+
+  open-pr:
+    name: Open PR with refreshed natives
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.create_pr == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download built native artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: connector-*
+          path: downloaded-natives
+
+      - name: Copy natives into natives-publish
+        run: |
+          for dir in downloaded-natives/connector-*; do
+            target="${dir#downloaded-natives/connector-}"
+            mkdir -p "natives-publish/src/main/resources/natives/${target}"
+            cp -f "${dir}"/* "natives-publish/src/main/resources/natives/${target}/"
+          done
+          rm -rf downloaded-natives
+          git add -f natives-publish/src/main/resources/natives/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: 'chore(natives): refresh prebuilt native binaries'
+          branch: 'chore/refresh-natives'
+          delete-branch: true
+          title: 'chore(natives): refresh prebuilt native binaries'
+          body: 'Automatically refreshed `win-x86-64`, `win-x86`, `linux-x86-64`, `linux-aarch64`, and `darwin` native binaries via `Build Natives` workflow.'
