@@ -18,8 +18,10 @@ static def getBuildParameters(base) {
             'env'           : [:]
         ]
     } else {
+        def arch = System.getProperty("os.arch")?.toLowerCase()
+        def isArm64 = arch == "aarch64" || arch == "arm64"
         return [
-            'identifier'    : "linux-x86-64",
+            'identifier'    : isArm64 ? "linux-aarch64" : "linux-x86-64",
             'library'       : "lib${base}.so",
             'setupArguments': ['-DCMAKE_BUILD_TYPE=Release'],
             'buildArguments': [],

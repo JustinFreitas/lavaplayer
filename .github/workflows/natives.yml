@@ -5,10 +5,10 @@ name: Build Natives
 # natives-publish/src/main/resources/natives/<identifier>/, so this workflow is
 # the reproducible way to refresh them.
 #
-# Only the three host-native targets the build script supports are covered here
-# (win-x86-64, linux-x86-64, darwin). The cross-compiled variants (win-x86, the
-# linux arm/aarch/musl targets) are not produced by natives/natives.gradle and
-# would need a dedicated cross-compilation job.
+# Only the host-native targets the build script supports are covered here
+# (win-x86-64, win-x86, linux-x86-64, linux-aarch64, darwin). The remaining
+# cross-compiled variants (linux 32-bit arm/x86 and musl targets) are not
+# produced by natives/natives.gradle and would need dedicated cross-compilation.
 
 on:
   workflow_dispatch:
@@ -33,6 +33,11 @@ jobs:
           - os: ubuntu-22.04
             identifier: linux-x86-64
             library: libconnector.so
+            manylinux_image: quay.io/pypa/manylinux2014_x86_64
+          - os: ubuntu-24.04-arm
+            identifier: linux-aarch64
+            library: libconnector.so
+            manylinux_image: quay.io/pypa/manylinux2014_aarch64
           - os: macos-15-intel
             identifier: darwin
             library: libconnector.dylib
@@ -69,7 +74,7 @@ jobs:
             -w /workspace \
             -e CMAKE_POLICY_VERSION_MINIMUM='3.5' \
             -e JAVA_HOME=/jdk \
-            quay.io/pypa/manylinux2014_x86_64 \
+            ${{ matrix.manylinux_image }} \
             bash -c 'export PATH="/jdk/bin:$PATH" && ./gradlew :natives:compileNatives --no-daemon'
 
       - name: Verify connector was produced
@@ -84,6 +89,8 @@ jobs:
           if [ "${{ matrix.identifier }}" = "darwin" ]; then
             file "$target"
             lipo -info "$target"
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            file "$target"
           fi
 
       - name: Upload native library

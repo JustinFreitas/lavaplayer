@@ -293,7 +293,13 @@ def autotoolsNoOpOverrides() {
 }
 
 // The x86-64 --with-cpu tuning forces x86 assembly, which does not assemble on
-// Apple Silicon; let configure autodetect the CPU there (arm64 macOS runners).
+// Apple Silicon or Linux ARM64; select aarch64 on Linux ARM64 and let configure
+// autodetect on macOS.
+def isArm64Host() {
+    def arch = System.getProperty("os.arch")?.toLowerCase()
+    return arch == "aarch64" || arch == "arm64"
+}
+
 def withCpuArgs(cpu) {
     return Os.isFamily(Os.FAMILY_MAC) ? [] : ["--with-cpu=${cpu}".toString()]
 }
@@ -308,7 +314,8 @@ def buildMpg123OnLinux(force) {
         def overrides = autotoolsNoOpOverrides()
 
         def flags = "-fPIC -O3 -fdata-sections -ffunction-sections"
-        def process = (['sh', './configure', '--enable-static'] + withCpuArgs('x86-64') + ['--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"] + overrides).
+        def cpu = isArm64Host() ? 'aarch64' : 'x86-64'
+        def process = (['sh', './configure', '--enable-static'] + withCpuArgs(cpu) + ['--with-pic', "CFLAGS=$flags", "CXXFLAGS=$flags"] + overrides).
             execute(null as String[], mpgDir)
 
         waitForAndCheckSuccess(process, "Mpg123 ./configure")
@@ -376,7 +383,8 @@ def prepareOggOnLinux(force) {
     def configured = file("$projectDir/vorbis/libogg-${oggVersion}/include/ogg/config_types.h").exists()
 
     if (force || !configured) {
-        def buildArgs = Os.isFamily(Os.FAMILY_MAC) ? [] : ["--build=x86_64-pc-linux-gnu"]
+        def linuxTriple = isArm64Host() ? "aarch64-unknown-linux-gnu" : "x86_64-pc-linux-gnu"
+        def buildArgs = Os.isFamily(Os.FAMILY_MAC) ? [] : ["--build=${linuxTriple}".toString()]
         def process = (["sh", "./configure", "--enable-static"] + buildArgs + ["--with-pic"]).
             execute(null as String[], file("$projectDir/vorbis/libogg-${oggVersion}"))
 
